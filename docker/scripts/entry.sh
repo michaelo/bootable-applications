@@ -7,6 +7,8 @@ ENTRY_FILE=$1
 BASENAME=$(basename -- "$ENTRY_FILE")
 BASENAMENOEXT="${BASENAME%.*}"
 
+# TBD: Create subfolder-structure for each BASENAME to allow side-by-side testing?
+
 echo "UEFI builder"
 echo "File: $ENTRY_FILE"
 
@@ -20,7 +22,6 @@ lld-link -entry:EfiMain -align:16 -driver -nodefaultlib -dll -subsystem:efi_appl
 
 # Prepare EFI folder structure for qemu
 cp build/bootx64.efi build/EFI/BOOT/BOOTX64.EFI
-
 
 # Make image file to flash
 FLASHFILE=build/fat.img
