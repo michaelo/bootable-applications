@@ -1,13 +1,12 @@
 FROM ubuntu:latest as base
 
 RUN apt-get update && apt-get -y upgrade
+
+# Basic required toolchain for build and linkage
 RUN apt-get install -y clang lld
-# RUN apt-get install -y git make fasm
-RUN apt-get install mtools
 
-# uefi-simple
-# RUN apt-get -y install make
-
+# For mformat to create .iso-files
+RUN apt-get install -y mtools
 
 # Mount-point for application source
 RUN mkdir /src

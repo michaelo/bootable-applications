@@ -2,8 +2,9 @@
 set -e
 set -u
 
-DEVICE=$1
+DEVICE=$2
+BASENAME=$(basename -- "$1")
 
 diskutil unmountDisk $DEVICE
-sudo dd if=build/fat.img of=$DEVICE bs=1m 
+sudo dd if=build/$BASENAME.img of=$DEVICE bs=1m 
 diskutil eject $DEVICE
