@@ -1,16 +1,12 @@
 #include "lil_uefi/lil_uefi.h"
 #include <stddef.h>
 
-void memset(void *ptr, int x, size_t n)
-{
-}
-
 // entry point
 EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 {
     EFI_BOOT_SERVICES *boot_services = system_table->BootServices;
 
-    EFI_EVENT event;
+    EFI_UINTN event;
     EFI_INPUT_KEY key;
 
     // For brevity
