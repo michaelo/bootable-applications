@@ -1,11 +1,12 @@
 #include "lil_uefi/lil_uefi.h"
-#include <stddef.h>
 
 void fill(EFI_UINT32 *frame_buffer, EFI_UINT64 frame_buffer_size, EFI_UINT32 r, EFI_UINT32 g, EFI_UINT32 b)
 {
+    EFI_UINT32 pixel = 0 | (r << 16) | (g << 8) | (b);
+
     for (EFI_UINT64 idx = 0; idx < frame_buffer_size / 4; idx += 1)
     {
-        frame_buffer[idx] = 0 | (r << 16) | (g << 8) | (b);
+        frame_buffer[idx] = pixel;
     }
 }
 
@@ -44,7 +45,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 
         // mode += 1;
         // gfx_out_prot->SetMode(gfx_out_prot, mode);
-        system_table->RuntimeServices->GetTime(&time, NULL);
+        system_table->RuntimeServices->GetTime(&time, 0);
         fill(frame_buffer_addr, frame_buffer_size, (time.Second*50)%256, (time.Second*33)%256, (time.Second*7)%256);
     }
 
