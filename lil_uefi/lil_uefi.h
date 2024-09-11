@@ -456,6 +456,8 @@ typedef struct EFI_OPEN_PROTOCOL_INFORMATION_ENTRY{
 } EFI_OPEN_PROTOCOL_INFORMATION_ENTRY;
 
 // Boot Services function table
+struct EFI_DEVICE_PATH_PROTOCOL;
+
 #define X(N, R, P) typedef R EFIAPI EFI_BootServices_##N P;
 #include "lil_uefi_boot_services_funcs.h"
 #undef X
@@ -783,6 +785,8 @@ typedef struct EFI_SIMPLE_POINTER_STATE{
     EFI_BOOLEAN RightButton;
 } EFI_SIMPLE_POINTER_STATE;
 
+struct EFI_SIMPLE_POINTER_PROTOCOL;
+
 #define X(N, R, P) typedef R EFIAPI EFI_SimplePointerProtocol_##N P;
 #include "lil_uefi_simple_pointer_protocol_funcs.h"
 #undef X
@@ -872,6 +876,8 @@ enum{
 };
 
 // Graphics Output Protocol function table
+struct EFI_GRAPHICS_OUTPUT_PROTOCOL;
+
 #define X(N, R, P) typedef R EFIAPI EFI_GraphicsOutputProtocol_##N P;
 #include "lil_uefi_graphics_output_protocol_funcs.h"
 #undef X
@@ -1017,6 +1023,7 @@ typedef enum EFI_USB_PORT_FEATURE{
 } EFI_USB_PORT_FEATURE;
 
 // Function Typedefs
+struct EFI_USB2_HC_PROTOCOL;
 #define X(N, R, P) typedef R EFIAPI EFI_USB2HCProtocol_##N P;
 #include "lil_uefi_usb2_hc_protocol_funcs.h"
 #undef X
