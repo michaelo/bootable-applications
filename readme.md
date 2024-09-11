@@ -8,7 +8,7 @@ Now go do something fun!
 
 ## Structure
 
-* `\<root>` - entry-point scripts - see the "Getting started"-section below
+* `/` - entry-point scripts - see the "Getting started"-section below
 * `bios/` - contains ovmf.fd, a port of Intels tianocore firmware to use with qemu
 * `docker/` - codifies the basic dependencies required to build, link and package UEFI-applications. I do however recommend installing the required tools locally.
 * `examples/` - a set of .c-files, each representing a basic feature of UEFI
