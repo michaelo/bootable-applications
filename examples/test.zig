@@ -19,8 +19,8 @@ pub fn main() usize {
     var scrap: [128]u8 = undefined;
     var scrap16: [128]u16 = undefined;
 
-    _ = con_out.outputString(W("Hello NDC!\r\n"));
-    _ = con_out.outputString(formatToU16(&scrap, &scrap16, "Look! We can do formatted strings now: {}", .{123}));
+    _ = con_out.outputString(W("Hello!\r\n"));
+    _ = con_out.outputString(formatToU16(&scrap, &scrap16, "Look {s}! We can do formatted strings now: {}", .{"NDC", 42}));
 
     const boot_services = uefi.system_table.boot_services.?;
     var event: u64 = undefined;
