@@ -21,7 +21,7 @@ CLFLAGS=-entry:EfiMain -subsystem:efi_application
 FILES=$(wildcard $(BASEDIR)/$(DIR)/*.c)
 FLASHFILE=build/$(DIR)/image.img
 
-build/$(DIR)/EFI/BOOT/BOOTX64.EFI: $(FILES)
+build/$(DIR)/EFI/BOOT/BOOTX64.EFI: $(FILES) $(wildcard shared/*)
 	mkdir -p build/$(DIR)/EFI/BOOT/
 	cd build/$(DIR)/ ; $(CC) $(CFLAGS) ../../$(BASEDIR)/$(DIR)/*.c
 	cd build/$(DIR)/ ; $(CL) $(CLFLAGS) -out:EFI/BOOT/BOOTX64.EFI *.o
