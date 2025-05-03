@@ -21,7 +21,7 @@ for some reason you absolutely want 64 bits of state. */
 
 static unsigned long rand_state; /* The state can be seeded with any value. */
 
-unsigned long rand_long()
+static unsigned long rand_long()
 {
     unsigned long z = (rand_state += 0x9e3779b97f4a7c15);
     z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
@@ -29,12 +29,12 @@ unsigned long rand_long()
     return z ^ (z >> 31);
 }
 
-unsigned int rand()
+static unsigned int rand()
 {
     return (unsigned int)(rand_long() & 0xffffffff);
 }
 
-void srand(unsigned long seed)
+static void srand(unsigned long seed)
 {
     rand_state = seed;
 }

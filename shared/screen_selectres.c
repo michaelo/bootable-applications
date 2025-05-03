@@ -5,7 +5,7 @@
 #include "utils.c"
 #include "draw.c" // for drawRectangle
 
-void SelectResolution(EFI_SYSTEM_TABLE *system_table)
+static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
 {
     EFI_UINTN event;
     EFI_INPUT_KEY key;

@@ -9,14 +9,14 @@ typedef enum
     Graphics,
 } Mode;
 
-void ConsoleWrite(EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *out, int col, int row, EFI_UINT16 *text)
+static void ConsoleWrite(EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *out, int col, int row, EFI_UINT16 *text)
 {
     out->SetCursorPosition(out, col, row);
     // https://uefi.org/specs/UEFI/2.10/12_Protocols_Console_Support.html?highlight=OutputString#efi-simple-text-output-protocol
     out->OutputString(out, text);
 }
 
-EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *GetModeText(EFI_SYSTEM_TABLE *system_table)
+static EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *GetModeText(EFI_SYSTEM_TABLE *system_table)
 {
     EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *out_prot;
 
@@ -30,7 +30,7 @@ EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *GetModeText(EFI_SYSTEM_TABLE *system_table)
     return out_prot;
 }
 
-EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *SetModeText(EFI_SYSTEM_TABLE *system_table, EFI_UINT32 num)
+static EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *SetModeText(EFI_SYSTEM_TABLE *system_table, EFI_UINT32 num)
 {
     EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *out_prot = GetModeText(system_table);
 
@@ -42,7 +42,7 @@ EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *SetModeText(EFI_SYSTEM_TABLE *system_table, EFI
     return out_prot;
 }
 
-EFI_GRAPHICS_OUTPUT_PROTOCOL *GetModeGraphics(EFI_SYSTEM_TABLE *system_table)
+static EFI_GRAPHICS_OUTPUT_PROTOCOL *GetModeGraphics(EFI_SYSTEM_TABLE *system_table)
 {
     EFI_GRAPHICS_OUTPUT_PROTOCOL *out_prot;
 
@@ -56,7 +56,7 @@ EFI_GRAPHICS_OUTPUT_PROTOCOL *GetModeGraphics(EFI_SYSTEM_TABLE *system_table)
     return out_prot;
 }
 
-EFI_GRAPHICS_OUTPUT_PROTOCOL *SetModeGraphics(EFI_SYSTEM_TABLE *system_table, EFI_UINT32 num)
+static EFI_GRAPHICS_OUTPUT_PROTOCOL *SetModeGraphics(EFI_SYSTEM_TABLE *system_table, EFI_UINT32 num)
 {
     EFI_GRAPHICS_OUTPUT_PROTOCOL *out_prot = GetModeGraphics(system_table);
 
@@ -68,7 +68,7 @@ EFI_GRAPHICS_OUTPUT_PROTOCOL *SetModeGraphics(EFI_SYSTEM_TABLE *system_table, EF
     return out_prot;
 }
 
-EFI_UINTN IntLen(EFI_UINTN value)
+static EFI_UINTN IntLen(EFI_UINTN value)
 {
     if (value == 0)
         return 1;
@@ -84,7 +84,7 @@ EFI_UINTN IntLen(EFI_UINTN value)
 
 // capacity: size, excluding e.g. terminating null - must be handled outside.
 // returns number of digits formatted
-EFI_UINTN FormatInt(EFI_UINT16 *buffer, EFI_UINTN capacity, EFI_UINTN value)
+static EFI_UINTN FormatInt(EFI_UINT16 *buffer, EFI_UINTN capacity, EFI_UINTN value)
 {
     EFI_UINTN digits = IntLen(value);
 
@@ -102,7 +102,7 @@ EFI_UINTN FormatInt(EFI_UINT16 *buffer, EFI_UINTN capacity, EFI_UINTN value)
     return digits;
 }
 
-EFI_UINTN uclamp(EFI_UINTN value, EFI_UINTN low, EFI_UINTN high)
+static EFI_UINTN uclamp(EFI_UINTN value, EFI_UINTN low, EFI_UINTN high)
 {
     if (value < low)
         value = low;
@@ -111,7 +111,7 @@ EFI_UINTN uclamp(EFI_UINTN value, EFI_UINTN low, EFI_UINTN high)
     return value;
 }
 
-void BlockForKey(EFI_SYSTEM_TABLE *system_table, EFI_UINT16 keychar)
+static void BlockForKey(EFI_SYSTEM_TABLE *system_table, EFI_UINT16 keychar)
 {
     EFI_UINTN event;
     EFI_INPUT_KEY key;
