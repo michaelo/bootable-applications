@@ -6,17 +6,23 @@
 
 #include "font8x8/font8x8_latin.h"
 
-char* getbitmap(int ord)
+char *getbitmap(int ord)
 {
-    if(ord < 0) return NULL;
+    if (ord < 0)
+        return NULL;
 
-    if(ord <= 0x7F) {
+    if (ord <= 0x7F)
+    {
         // Contains an 8x8 font map for unicode points U+0000 - U+007F (basic latin)
         return font8x8_basic[ord];
-    } else if (ord <= 0x9F) {
+    }
+    else if (ord <= 0x9F)
+    {
         // Contains an 8x8 font map for unicode points U+0080 - U+009F (C1/C2 control)
         return font8x8_control[ord - 0x80];
-    } else if (ord <= 0xFF) {
+    }
+    else if (ord <= 0xFF)
+    {
         // Contains an 8x8 font map for unicode points U+00A0 - U+00FF (extended latin)
         return font8x8_ext_latin[ord - 0xA0];
     }
@@ -32,8 +38,9 @@ void renderChar(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx, int dx, int dy, EFI_GRAPHICS_
     EFI_UINT64 frame_buffer_size = gfx->Mode->frame_buffer_size;
 
     char *bitmap = getbitmap(ord);
-    if(!bitmap) return;
-    
+    if (!bitmap)
+        return;
+
     int x, y;
     int set;
     int mask;
@@ -42,8 +49,9 @@ void renderChar(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx, int dx, int dy, EFI_GRAPHICS_
         for (y = 0; y < 8; y++)
         {
             set = bitmap[y] & 1 << x;
-            EFI_UINT64 idx = (dy + y) * gfx->Mode->info->HorizontalResolution + (dx + x);
-            if(idx >= frame_buffer_size) continue;
+            EFI_UINT64 idx = (dy + y) * gfx->Mode->info->PixelsPerScanLine + (dx + x);
+            if (idx >= frame_buffer_size)
+                continue;
             frame_buffer_addr[idx] = set ? fg : bg;
         }
     }
@@ -59,7 +67,8 @@ void renderCharFg(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx, int dx, int dy, EFI_GRAPHIC
     EFI_UINT64 frame_buffer_size = gfx->Mode->frame_buffer_size;
 
     char *bitmap = getbitmap(ord);
-    if(!bitmap) return;
+    if (!bitmap)
+        return;
 
     int x, y;
     int set;
@@ -69,31 +78,38 @@ void renderCharFg(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx, int dx, int dy, EFI_GRAPHIC
         for (y = 0; y < 8; y++)
         {
             set = bitmap[y] & 1 << x;
-            EFI_UINT64 idx = (dy + y) * gfx->Mode->info->HorizontalResolution + (dx + x);
-            if(idx >= frame_buffer_size) continue;
-            if(set) frame_buffer_addr[idx] = fg;
+            EFI_UINT64 idx = (dy + y) * gfx->Mode->info->PixelsPerScanLine + (dx + x);
+            if (idx >= frame_buffer_size)
+                continue;
+            if (set)
+                frame_buffer_addr[idx] = fg;
         }
     }
 }
 
-// void renderString(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx, int dx, int dy, EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg, EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg, char *text)
-// {
-//     // assumes text is eventually null-terminated
-//     int cidx = 0;
-//     while(text[cidx] != 0) {
-//         renderChar(gfx, dx+(8*cidx), dy, bg, fg, text[cidx]);
-//         cidx += 1;
-//     }
-// }
-
-void renderStringFg(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx, int dx, int dy, EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg, EFI_UINT16 *text)
+// Returns length of string
+void renderString(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx, int dx, int dy, EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg, EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg, EFI_UINT16 *text)
 {
     // assumes text is eventually null-terminated
     int cidx = 0;
     while(text[cidx] != 0) {
-        renderCharFg(gfx, dx+(8*cidx), dy, fg, text[cidx]);
+        renderChar(gfx, dx+(8*cidx), dy, bg, fg, text[cidx]);
         cidx += 1;
     }
+    return cidx * 8;
+}
+
+// Returns length of string
+EFI_UINT64 renderStringFg(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx, int dx, int dy, EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg, EFI_UINT16 *text)
+{
+    // assumes text is eventually null-terminated
+    int cidx = 0;
+    while (text[cidx] != 0)
+    {
+        renderCharFg(gfx, dx + (8 * cidx), dy, fg, text[cidx]);
+        cidx += 1;
+    }
+    return cidx * 8;
 }
 
 EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
