@@ -4,6 +4,7 @@
 #include "lil_uefi/lil_uefi.h"
 #include "utils.c"
 #include "draw.c" // for drawRectangle
+#include "text.c"
 
 static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
 {
@@ -28,28 +29,45 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
     EFI_UINT16 scrap[32];
     EFI_UINTN len = 0;
 
+    EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg = color(255, 255, 255);
+
+    EFI_UINTN xMargin = 50;
+
     while (alive)
     {
         text->ClearScreen(text);
         drawRectangle(gfx, 0, 0, 640, 480, color(128,0,128));
 
         // Write current resolution + help commands
-        ConsoleWrite(text, 0, 0, L"--- Select resolution (ref-box is 640*480) ---");
+        int x = xMargin;
+        int tmpLen = renderStringFg(gfx, x, 50, fg, L"--- Select resolution (ref-box is 640*480) ---");
+
+        x += tmpLen;
+        FormatIntZ(scrap, sizeof(scrap), mode_num+1);
+        tmpLen = renderStringFg(gfx, x, 50, fg, scrap);
+        x += tmpLen;
+        tmpLen = renderStringFg(gfx, x, 50, fg, L"/");
+        x += tmpLen;
+        FormatIntZ(scrap, sizeof(scrap), gfx->Mode->max_mode);
+        tmpLen = renderStringFg(gfx, x, 50, fg, scrap);
+
+        // ConsoleWrite(text, 0, 0, L"--- Select resolution (ref-box is 640*480) ---");
         gfx->QueryMode(gfx, mode_num, &gfx_info_size, &gfx_info);
 
-        ConsoleWrite(text, 0, 1, L"Current resolution: ");
+        // ConsoleWrite(text, 0, 1, L"Current resolution: ");
+        renderStringFg(gfx, xMargin, 60, fg, L"Current resolution: ");
 
-        len = FormatInt(scrap, sizeof(scrap) - 1, gfx_info->HorizontalResolution);
-        scrap[len] = 0;
-        ConsoleWrite(text, 0, 2, L"Width: ");
-        ConsoleWrite(text, 7, 2, scrap);
+        FormatIntZ(scrap, sizeof(scrap) - 1, gfx_info->HorizontalResolution);
 
-        len = FormatInt(scrap, sizeof(scrap) - 1, gfx_info->VerticalResolution);
-        scrap[len] = 0;
-        ConsoleWrite(text, 0, 3, L"Height: ");
-        ConsoleWrite(text, 8, 3, scrap);
+        renderStringFg(gfx, xMargin + renderStringFg(gfx, xMargin, 70, fg, L"Width: "), 70, fg, scrap);
 
-        ConsoleWrite(text, 0, 5, L"Press Left/Right to iterate. Press Enter when happy.");
+
+
+        FormatIntZ(scrap, sizeof(scrap) - 1, gfx_info->VerticalResolution);
+
+        renderStringFg(gfx, xMargin + renderStringFg(gfx, xMargin, 80, fg, L"Height: "), 80, fg, scrap);
+
+        renderStringFg(gfx, xMargin, 100, fg, L"Press Left/Right to iterate. Press Enter when happy.");
 
         // Wait for response
         system_table->BootServices->WaitForEvent(1, &system_table->ConIn->WaitForKey, &event);

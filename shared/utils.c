@@ -102,6 +102,14 @@ static EFI_UINTN FormatInt(EFI_UINT16 *buffer, EFI_UINTN capacity, EFI_UINTN val
     return digits;
 }
 
+// capactiy: size, including terminating null.
+static EFI_UINTN FormatIntZ(EFI_UINT16 *buffer, EFI_UINTN capacity, EFI_UINTN value)
+{
+    int len = FormatInt(buffer, capacity-1, value);
+    buffer[len] = 0;
+    return len;
+}
+
 static EFI_UINTN uclamp(EFI_UINTN value, EFI_UINTN low, EFI_UINTN high)
 {
     if (value < low)
