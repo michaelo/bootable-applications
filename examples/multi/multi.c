@@ -1,11 +1,11 @@
 #include "lil_uefi/lil_uefi.h"
 #include <stddef.h>
 
-#include "impl/utils.c"
-#include "impl/rand.c"
-#include "impl/draw.c"
+#include "shared/utils.c"
+#include "shared/rand.c"
+#include "shared/draw.c"
 
-#include "impl/screen_selectres.c" // For SelectResolution()
+#include "shared/screen_selectres.c" // For SelectResolution()
 
 // typedef struct
 // {

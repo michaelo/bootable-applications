@@ -33,11 +33,11 @@ EFI_GRAPHICS_OUTPUT_BLT_PIXEL i32ToColor(int i32color)
     return *((EFI_GRAPHICS_OUTPUT_BLT_PIXEL*)&color);
 }
 
-// void drawRectangle(EFI_UINT32 dx, EFI_UINT32 dy, EFI_UINT32 width, EFI_UINT32 height, EFI_GRAPHICS_OUTPUT_BLT_PIXEL color)
-// {
-//     EFI_UINT32 * buffer = (EFI_UINT32 *) &color;
-//     graphics->Blt(graphics, buffer, EFI_GRAPHICS_OUTPUT_BLT_OPERATION_VideoFill, 0, 0, dx, dy, width, height, 0);
-// }
+void drawRectangle(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx_out, EFI_UINT32 dx, EFI_UINT32 dy, EFI_UINT32 width, EFI_UINT32 height, EFI_GRAPHICS_OUTPUT_BLT_PIXEL color)
+{
+    EFI_UINT32 * buffer = (EFI_UINT32 *) &color;
+    gfx_out->Blt(gfx_out, buffer, EFI_GRAPHICS_OUTPUT_BLT_OPERATION_VideoFill, 0, 0, dx, dy, width, height, 0);
+}
 
 // void clear(EFI_GRAPHICS_OUTPUT_BLT_PIXEL color)
 // {

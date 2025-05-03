@@ -2,7 +2,8 @@
 #define IMPL_SCREEN_SELECTRES
 
 #include "lil_uefi/lil_uefi.h"
-#include "../impl/utils.c"
+#include "utils.c"
+#include "draw.c" // for drawRectangle
 
 void SelectResolution(EFI_SYSTEM_TABLE *system_table)
 {
@@ -29,9 +30,10 @@ void SelectResolution(EFI_SYSTEM_TABLE *system_table)
     while (alive)
     {
         text->ClearScreen(text);
+        drawRectangle(gfx, 0, 0, 640, 480, color(128,0,128));
 
         // Write current resolution + help commands
-        ConsoleWrite(text, 0, 0, L"--- Select resolution ---");
+        ConsoleWrite(text, 0, 0, L"--- Select resolution (ref-box is 640*480) ---");
         gfx->QueryMode(gfx, mode_num, &gfx_info_size, &gfx_info);
 
         ConsoleWrite(text, 0, 1, L"Current resolution: ");

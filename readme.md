@@ -12,10 +12,13 @@ Now go do something fun!
 * `bios/` - contains ovmf.fd, a port of Intels tianocore firmware to use with qemu
 * `docker/` - codifies the basic dependencies required to build, link and package UEFI-applications. I do however recommend installing the required tools locally.
 * `examples/` - a set of .c-files, each representing a basic feature of UEFI
+* `shared/` - implementations of common, reusable, functionality
 * `lil_uefi/` - a header-only library providing definitions to access UEFI-capabilities
 * `presentation/` - exports of the slides as presented
 
 ## Getting started
+
+Att! These tests requires stand-alone files directly under examples/. For directories of multiple compilation units, see make-based appreoach below.
 
 1. Install clang and lld, or build the bundled docker image with `./create-docker-image.sh` (will be tagged as 'uefibuilder')
 1. Build
@@ -31,6 +34,15 @@ Now go do something fun!
         * `./flashusb-macos.sh hello /dev/<device>`
     1. for any/other OSes: similar to how you'd flash a USB with other operating system .img-files
 
+## Alternative make-based approach
+
+DIR-argument specifies which folder under "examples" shall be built. All .c-files will then be built and linked.
+
+1. `make DIR=hello`
+1. `make DIR=hello run`
+1. `make DIR=hello flash`
+
+TBD: Replace .sh-based build scripts if we find the Makefile usable enough.
 
 ## Credits
 
