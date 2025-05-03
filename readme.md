@@ -17,7 +17,7 @@ Now go do something fun!
 
 ## Getting started
 
-1. Install cland and lld, or build the bundled docker image with `./create-docker-image.sh` (will be tagged as 'uefibuilder')
+1. Install clang and lld, or build the bundled docker image with `./create-docker-image.sh` (will be tagged as 'uefibuilder')
 1. Build
     * ... with Docker
         * `./build-with-docker.sh examples/hello.c`
@@ -28,7 +28,7 @@ Now go do something fun!
 1. Flash to USB
     1. for macos:
         * Insert USB-drive - determine device path, e.g. `diskutil list`
-        * `./flashusb-macos.sh /dev/\<device> hello`
+        * `./flashusb-macos.sh hello /dev/<device>`
     1. for any/other OSes: similar to how you'd flash a USB with other operating system .img-files
 
 
