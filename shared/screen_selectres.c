@@ -17,11 +17,12 @@ void SelectResolution(EFI_SYSTEM_TABLE *system_table)
     EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *text = SetModeText(system_table, 0);
     // EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *out = system_table->ConOut;
 
+    EFI_UINTN mode_num = 0;
+    SetModeGraphics(system_table, mode_num);
     EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx = GetModeGraphics(system_table);
     EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *gfx_info;
     EFI_UINTN gfx_info_size;
-
-    EFI_UINTN mode_num = 0;
+    
     int alive = 1;
 
     EFI_UINT16 scrap[32];
