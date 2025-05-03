@@ -88,7 +88,7 @@ void renderCharFg(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx, int dx, int dy, EFI_GRAPHIC
 }
 
 // Returns length of string
-void renderString(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx, int dx, int dy, EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg, EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg, EFI_UINT16 *text)
+EFI_UINT64 renderString(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx, int dx, int dy, EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg, EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg, EFI_UINT16 *text)
 {
     // assumes text is eventually null-terminated
     int cidx = 0;
