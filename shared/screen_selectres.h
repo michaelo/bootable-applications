@@ -2,9 +2,9 @@
 #define IMPL_SCREEN_SELECTRES
 
 #include "lil_uefi/lil_uefi.h"
-#include "utils.c"
-#include "draw.c" // for drawRectangle
-#include "text.c"
+#include "utils.h"
+#include "draw.h" // for drawRectangle
+#include "text.h"
 
 static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
 {
@@ -31,43 +31,46 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
 
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg = color(255, 255, 255);
 
-    EFI_UINTN xMargin = 50;
-
     while (alive)
     {
+        EFI_UINTN xMargin = 50;
+        EFI_UINTN y = 50;
+        
         text->ClearScreen(text);
         drawRectangle(gfx, 0, 0, 640, 480, color(128,0,128));
 
         // Write current resolution + help commands
         int x = xMargin;
-        int tmpLen = renderStringFg(gfx, x, 50, fg, L"--- Select resolution (ref-box is 640*480) ---");
+        int tmpLen = renderStringFg(gfx, x, y, fg, L"--- Select resolution (ref-box is 640*480) ---");
 
         x += tmpLen;
         FormatIntZ(scrap, sizeof(scrap), mode_num+1);
-        tmpLen = renderStringFg(gfx, x, 50, fg, scrap);
+        tmpLen = renderStringFg(gfx, x, y, fg, scrap);
         x += tmpLen;
-        tmpLen = renderStringFg(gfx, x, 50, fg, L"/");
+        tmpLen = renderStringFg(gfx, x, y, fg, L"/");
         x += tmpLen;
         FormatIntZ(scrap, sizeof(scrap), gfx->Mode->max_mode);
-        tmpLen = renderStringFg(gfx, x, 50, fg, scrap);
+        tmpLen = renderStringFg(gfx, x, y, fg, scrap);
 
-        // ConsoleWrite(text, 0, 0, L"--- Select resolution (ref-box is 640*480) ---");
+        
         gfx->QueryMode(gfx, mode_num, &gfx_info_size, &gfx_info);
 
-        // ConsoleWrite(text, 0, 1, L"Current resolution: ");
-        renderStringFg(gfx, xMargin, 60, fg, L"Current resolution: ");
+        y += 10;
+        renderStringFg(gfx, xMargin, y, fg, L"Current resolution: ");
 
+        y += 10;
         FormatIntZ(scrap, sizeof(scrap) - 1, gfx_info->HorizontalResolution);
+        renderStringFg(gfx, xMargin + renderStringFg(gfx, xMargin, y, fg, L"Width: "), 70, fg, scrap);
 
-        renderStringFg(gfx, xMargin + renderStringFg(gfx, xMargin, 70, fg, L"Width: "), 70, fg, scrap);
-
-
-
+        y += 10;
         FormatIntZ(scrap, sizeof(scrap) - 1, gfx_info->VerticalResolution);
+        renderStringFg(gfx, xMargin + renderStringFg(gfx, xMargin, y, fg, L"Height: "), 80, fg, scrap);
 
-        renderStringFg(gfx, xMargin + renderStringFg(gfx, xMargin, 80, fg, L"Height: "), 80, fg, scrap);
+        y += 10;
+        y += 10;
+        renderStringFg(gfx, xMargin, y, fg, L"Press Left/Right to iterate. Press Enter when happy.");
 
-        renderStringFg(gfx, xMargin, 100, fg, L"Press Left/Right to iterate. Press Enter when happy.");
+        
 
         // Wait for response
         system_table->BootServices->WaitForEvent(1, &system_table->ConIn->WaitForKey, &event);
@@ -97,7 +100,6 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
             break;
         };
 
-        // mode_num = uclamp(mode_num, 0, gfx->Mode->max_mode-1);
         SetModeGraphics(system_table, mode_num);
     }
 }

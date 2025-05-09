@@ -1,9 +1,9 @@
 #include "lil_uefi/lil_uefi.h"
 #include <stddef.h>
-#include "shared/utils.c"
-#include "shared/draw.c"
-#include "shared/screen_selectres.c"
-#include "shared/text.c"
+#include "shared/utils.h"
+#include "shared/draw.h"
+#include "shared/screen_selectres.h"
+#include "shared/text.h"
 
 EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 {
