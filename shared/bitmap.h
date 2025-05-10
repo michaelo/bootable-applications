@@ -12,7 +12,7 @@ typedef struct Bitmap {
     Color_BGRA * buffer;
 } Bitmap;
 
-Bitmap * createBitmap(EFI_UINT32 width, EFI_UINT32 height)
+static Bitmap * createBitmap(EFI_UINT32 width, EFI_UINT32 height)
 {
     Bitmap * bitmap = (Bitmap*) malloc(sizeof(Bitmap) + sizeof(Color_BGRA) * width * height);
     bitmap->width = width;
@@ -22,7 +22,7 @@ Bitmap * createBitmap(EFI_UINT32 width, EFI_UINT32 height)
     return bitmap;
 }
 
-Bitmap * loadBitmap(EFI_UINT32 width, EFI_UINT32 height, EFI_UINT32 stride, const unsigned int * buffer)
+static Bitmap * loadBitmap(EFI_UINT32 width, EFI_UINT32 height, EFI_UINT32 stride, const unsigned int * buffer)
 {
     Bitmap * bitmap = (Bitmap *)malloc(sizeof(Bitmap));
     bitmap->width = width;
@@ -32,17 +32,17 @@ Bitmap * loadBitmap(EFI_UINT32 width, EFI_UINT32 height, EFI_UINT32 stride, cons
     return bitmap;
 }
 
-Bitmap * bitmapFromScreenBuffer(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx_out)
+static Bitmap * bitmapFromScreenBuffer(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx_out)
 {
     return loadBitmap(gfx_out->Mode->info->HorizontalResolution, gfx_out->Mode->info->VerticalResolution, gfx_out->Mode->info->PixelsPerScanLine, (const unsigned int *) gfx_out->Mode->frame_buffer_base);
 }
 
-void destroyBitmap(Bitmap * bitmap)
+static void destroyBitmap(Bitmap * bitmap)
 {
     free(bitmap);
 }
 
-void fillBitmap(Bitmap * bitmap, Color_BGRA color)
+static void fillBitmap(Bitmap * bitmap, Color_BGRA color)
 {
     EFI_UINTN numpixels = bitmap->stride * bitmap->height;
     for (EFI_UINT64 idx = 0; idx < numpixels; idx += 1)
@@ -51,7 +51,7 @@ void fillBitmap(Bitmap * bitmap, Color_BGRA color)
     }
 }
 
-void drawBitmapTransparent(EFI_UINT32 dx, EFI_UINT32 dy, Bitmap * source, Bitmap * target)
+static void drawBitmapTransparent(EFI_UINT32 dx, EFI_UINT32 dy, Bitmap * source, Bitmap * target)
 {
     for (EFI_UINT32 y = 0; y < source->height; y++)
     {
@@ -67,7 +67,7 @@ void drawBitmapTransparent(EFI_UINT32 dx, EFI_UINT32 dy, Bitmap * source, Bitmap
     }
 }
 
-void drawLineToBitmap(int x0, int y0, int x1, int y1, Bitmap * target, Color_BGRA color)
+static void drawLineToBitmap(int x0, int y0, int x1, int y1, Bitmap * target, Color_BGRA color)
 {
     int dx = x1 - x0;
     int dy = y1 - y0;

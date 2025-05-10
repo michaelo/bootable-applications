@@ -1,11 +1,10 @@
+#include <stddef.h>
 #include "lil_uefi/lil_uefi.h"
 #include "shared/rand.h"
 #include "shared/draw.h"
 #include "shared/math.h"
 #include "shared/colorspace.h"
 #include "shared/memory.h"
-
-#define NULL 0
 
 // Originally inspired by https://lodev.org/cgtutor/plasma.html
 #define dist(a, b, c, d) sqrt((double)((a - c) * (a - c) + (b - d) * (b - d)))

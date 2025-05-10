@@ -12,7 +12,7 @@ typedef struct Color_HSVA {
     unsigned char a;
 } Color_HSVA;
 
-Color_BGRA HsvToRgb(Color_HSVA hsva)
+static Color_BGRA HsvToRgb(Color_HSVA hsva)
 {
     Color_BGRA bgra;
     unsigned char region, remainder, p, q, t;
@@ -58,7 +58,7 @@ Color_BGRA HsvToRgb(Color_HSVA hsva)
     return bgra;
 }
 
-Color_HSVA RgbToHsv(Color_BGRA bgra)
+static Color_HSVA RgbToHsv(Color_BGRA bgra)
 {
     Color_HSVA hsva;
     hsva.a = bgra.Reserved;

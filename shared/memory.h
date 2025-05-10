@@ -5,11 +5,11 @@
 
 EFI_BOOT_SERVICES *boot_services;
 
-void initialize_memory(EFI_BOOT_SERVICES *boot_services_ptr){
+static void initialize_memory(EFI_BOOT_SERVICES *boot_services_ptr){
     boot_services = boot_services_ptr;
 }
 
-void * malloc(unsigned long long size)
+static void * malloc(unsigned long long size)
 {
     EFI_STATUS error;
     void * handle;
@@ -17,18 +17,18 @@ void * malloc(unsigned long long size)
     return error ? 0 : handle;
 }
 
-void free(void * ptr)
+static void free(void * ptr)
 {
     boot_services->FreePool(ptr);
 }
 
-void * memcpy(void * dst, const void * src, unsigned long long len)
+static void * memcpy(void * dst, const void * src, unsigned long long len)
 {
     boot_services->CopyMem(dst, (void*)src, len);
     return dst;
 }
 
-void * memset(void * dst, int value, unsigned long long len)
+static void * memset(void * dst, int value, unsigned long long len)
 {
     boot_services->SetMem(dst, len, value);
     return dst;

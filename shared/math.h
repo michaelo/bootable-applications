@@ -11,17 +11,17 @@
 
 int _fltused = 0;
 
-float degToRad(float deg)
+static float degToRad(float deg)
 {
     return deg / (180.0 / M_PI);
 }
 
-float radToDeg(float rad)
+static float radToDeg(float rad)
 {
     return rad * (180.0 / M_PI);
 }
 
-double cos(double x)
+static double cos(double x)
 {
     asm("fldl %0;"
         "fcos;"
@@ -31,7 +31,7 @@ double cos(double x)
     return x;
 }
 
-double sin(double x)
+static double sin(double x)
 {
     asm("fldl %0;"
         "fsin;"
@@ -41,12 +41,12 @@ double sin(double x)
     return x;
 }
 
-double tan(double x)
+static double tan(double x)
 {
     return (sin(x) / cos(x));
 }
 
-double sqrt(double x)
+static double sqrt(double x)
 {
     asm("fldl %0;"
         "fsqrt;"
@@ -56,12 +56,12 @@ double sqrt(double x)
     return x;
 }
 
-int abs(int v)
+static int abs(int v)
 {
     return v > 0 ? v : -v;
 }
 
-double round(double x)
+static double round(double x)
 {
     if (x < 0.0)
         return (int)(x - 0.5);
@@ -69,7 +69,7 @@ double round(double x)
         return (int)(x + 0.5);
 }
 
-float roundf(float x)
+static float roundf(float x)
 {
     if (x < 0.0f)
         return (int)(x - 0.5f);
