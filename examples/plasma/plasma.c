@@ -5,7 +5,7 @@
 #include "shared/colorspace.h"
 
 #define NULL 0
-
+//foo
 // Originally inspired by https://lodev.org/cgtutor/plasma.html
 #define dist(a, b, c, d) sqrt((double)((a - c) * (a - c) + (b - d) * (b - d)))
 
