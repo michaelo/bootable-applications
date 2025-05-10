@@ -4,6 +4,7 @@
 #include "lil_uefi/lil_uefi.h"
 #include "utils.h"
 #include "draw.h" // for drawRectangle
+#include "color.h"
 #include "text.h"
 
 static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
@@ -37,7 +38,7 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
         EFI_UINTN y = 50;
         
         text->ClearScreen(text);
-        drawRectangle(gfx, 0, 0, 640, 480, color(128,0,128));
+        drawRectangleToScreen(gfx, 0, 0, 640, 480, color(128,0,128));
 
         // Write current resolution + help commands
         int x = xMargin;

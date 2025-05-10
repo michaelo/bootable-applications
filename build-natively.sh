@@ -18,10 +18,11 @@ mkdir -p build/$BASENAMENOEXT/EFI/BOOT/
 # Generate preprocessed file (not necessary - just for insight into what gets compiled)
 clang $ENTRY_FILE -E -I. -o build/$BASENAMENOEXT.o.e
 # Generate COFF object file
-clang $ENTRY_FILE -I. -c -target x86_64-pc-win32-coff -o build/$BASENAMENOEXT.o
+clang $ENTRY_FILE -I. -c -Os -flto -target x86_64-pc-win32-coff -fno-builtin-memset -o build/$BASENAMENOEXT.o 
 
 # Generate PE32+ executable
-lld-link -entry:EfiMain -subsystem:efi_application -out:build/$BASENAMENOEXT/EFI/BOOT/BOOTX64.EFI build/$BASENAMENOEXT.o
+lld-link -entry:EfiMain -subsystem:efi_application -out:build/$BASENAMENOEXT/EFI/BOOT/BOOTX64.EFI build/$BASENAMENOEXT.o 
+upx -9 build/$BASENAMENOEXT/EFI/BOOT/BOOTX64.EFI
 
 # Make image file to flash
 FLASHFILE=build/$BASENAMENOEXT.img

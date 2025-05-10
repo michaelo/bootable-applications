@@ -15,11 +15,11 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     out->ClearScreen(out);
 
     SelectResolution(system_table);
-    fill(gfx, color(96,0,0));
+    fillScreen(gfx, color(96,0,0));
 
-    drawRectangle(gfx, 10, 10, 95, 95, color(128, 0, 0));
+    drawRectangleToScreen(gfx, 10, 10, 95, 95, color(128, 0, 0));
 
-    drawRectangle(gfx, 150, 70, 95, 120, color(128, 128, 0));
+    drawRectangleToScreen(gfx, 150, 70, 95, 120, color(128, 128, 0));
 
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg = color(0, 0, 0);
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg = color(255, 255, 255);
