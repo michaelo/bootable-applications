@@ -1,15 +1,20 @@
+#ifndef COLORSPACE_H
+#define COLORSPACE_H
+
+#include "shared/color.h"
+
 //Based on https://stackoverflow.com/a/14733008/2087791
 
 typedef struct Color_HSVA {
-    unsigned char h;
+    unsigned char h; //note: 0-255 rather than 0-360
     unsigned char s;
     unsigned char v;
     unsigned char a;
 } Color_HSVA;
 
-EFI_GRAPHICS_OUTPUT_BLT_PIXEL HsvToRgb(Color_HSVA hsva)
+static Color_BGRA HsvToRgb(Color_HSVA hsva)
 {
-    EFI_GRAPHICS_OUTPUT_BLT_PIXEL bgra;
+    Color_BGRA bgra;
     unsigned char region, remainder, p, q, t;
     
     if (hsva.s == 0)
@@ -53,7 +58,7 @@ EFI_GRAPHICS_OUTPUT_BLT_PIXEL HsvToRgb(Color_HSVA hsva)
     return bgra;
 }
 
-Color_HSVA RgbToHsv(EFI_GRAPHICS_OUTPUT_BLT_PIXEL bgra)
+static Color_HSVA RgbToHsv(Color_BGRA bgra)
 {
     Color_HSVA hsva;
     hsva.a = bgra.Reserved;
@@ -87,3 +92,5 @@ Color_HSVA RgbToHsv(EFI_GRAPHICS_OUTPUT_BLT_PIXEL bgra)
 
     return hsva;
 }
+
+#endif

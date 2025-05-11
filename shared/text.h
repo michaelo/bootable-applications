@@ -6,7 +6,7 @@
 
 #include "font8x8/font8x8_latin.h"
 
-static char *getbitmap(int ord)
+static char *getGlyph(int ord)
 {
     if (ord < 0)
         return NULL;
@@ -29,72 +29,71 @@ static char *getbitmap(int ord)
     return NULL;
 }
 
-static void renderChar(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx, int dx, int dy, EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg, EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg, int ord)
+static void renderChar(Bitmap * bitmap, int dx, int dy, Color_BGRA bg, Color_BGRA fg, int ord)
 {
-    EFI_GRAPHICS_OUTPUT_BLT_PIXEL *frame_buffer_addr = (EFI_GRAPHICS_OUTPUT_BLT_PIXEL *)gfx->Mode->frame_buffer_base;
-    EFI_UINT64 frame_buffer_size = gfx->Mode->frame_buffer_size;
-
-    char *bitmap = getbitmap(ord);
-    if (!bitmap)
+    char * glyph = getGlyph(ord);
+    if (!glyph)
         return;
 
+    EFI_UINTN bufferSize = bitmap->height * bitmap->stride;
     for (int x = 0; x < 8; x++)
     {
         for (int y = 0; y < 8; y++)
         {
-            int set = bitmap[y] & 1 << x;
-            EFI_UINT64 idx = (dy + y) * gfx->Mode->info->PixelsPerScanLine + (dx + x);
-            if (idx >= frame_buffer_size)
-                continue;
-            frame_buffer_addr[idx] = set ? fg : bg;
+            int px = dx + x;
+            if (px < 0 || px > bitmap->width) continue;
+            int py = dy + y;
+            if (py < 0 || py > bitmap->height) continue;
+            int set = glyph[y] & 1 << x;
+            EFI_UINT64 idx = py * bitmap->stride + px;
+            bitmap->buffer[idx] = set ? fg : bg;
         }
     }
 }
 
 // Transparent bg
-static void renderCharFg(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx, int dx, int dy, EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg, int ord)
+static void renderCharFg(Bitmap * bitmap, int dx, int dy, Color_BGRA fg, int ord)
 {
-    EFI_GRAPHICS_OUTPUT_BLT_PIXEL *frame_buffer_addr = (EFI_GRAPHICS_OUTPUT_BLT_PIXEL *)gfx->Mode->frame_buffer_base;
-    EFI_UINT64 frame_buffer_size = gfx->Mode->frame_buffer_size;
-
-    char *bitmap = getbitmap(ord);
-    if (!bitmap)
+    char * glyph = getGlyph(ord);
+    if (!glyph)
         return;
 
+    EFI_UINTN bufferSize = bitmap->height * bitmap->stride;
     for (int x = 0; x < 8; x++)
     {
         for (int y = 0; y < 8; y++)
         {
-            int set = bitmap[y] & 1 << x;
-            EFI_UINT64 idx = (dy + y) * gfx->Mode->info->PixelsPerScanLine + (dx + x);
-            if (idx >= frame_buffer_size)
-                continue;
-            if (set)
-                frame_buffer_addr[idx] = fg;
+            int px = dx + x;
+            if (px < 0 || px > bitmap->width) continue;
+            int py = dy + y;
+            if (py < 0 || py > bitmap->height) continue;
+            int set = glyph[y] & 1 << x;
+            EFI_UINT64 idx = py * bitmap->stride + px;
+            if (set) bitmap->buffer[idx] = fg;
         }
     }
 }
 
 // Returns length of string - consider returning final x-coordinat for direct usage
-static EFI_UINT64 renderString(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx, int dx, int dy, EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg, EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg, EFI_UINT16 *text)
+static EFI_UINT64 renderString(Bitmap * bitmap, int dx, int dy, Color_BGRA bg, Color_BGRA fg, EFI_UINT16 *text)
 {
     // assumes text is eventually null-terminated
     int cidx = 0;
     while(text[cidx] != 0) {
-        renderChar(gfx, dx+(8*cidx), dy, bg, fg, text[cidx]);
+        renderChar(bitmap, dx+(8*cidx), dy, bg, fg, text[cidx]);
         cidx += 1;
     }
     return cidx * 8;
 }
 
 // Returns length of string - consider returning final x-coordinat for direct usage
-static EFI_UINT64 renderStringFg(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx, int dx, int dy, EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg, EFI_UINT16 *text)
+static EFI_UINT64 renderStringFg(Bitmap * bitmap, int dx, int dy, Color_BGRA fg, EFI_UINT16 *text)
 {
     // assumes text is eventually null-terminated
     int cidx = 0;
     while (text[cidx] != 0)
     {
-        renderCharFg(gfx, dx + (8 * cidx), dy, fg, text[cidx]);
+        renderCharFg(bitmap, dx + (8 * cidx), dy, fg, text[cidx]);
         cidx += 1;
     }
     return cidx * 8;

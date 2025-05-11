@@ -3,6 +3,7 @@
 
 #include "shared/utils.h"
 #include "shared/rand.h"
+#include "shared/color.h"
 #include "shared/draw.h"
 
 #include "shared/screen_selectres.h" // For SelectResolution()
@@ -29,7 +30,7 @@ void RandomFill(EFI_SYSTEM_TABLE* system_table)
         if (key.UnicodeChar == 13)
             break;
             
-        fill(gfx_out_prot, i32ToColor(rand()));
+        fillScreen(gfx_out_prot, i32ToColor(rand()));
         // ConsoleWrite(system_table->ConOut, 0, 0, L"Enter to exit. Any other key to fill random color.");
     }
 }
