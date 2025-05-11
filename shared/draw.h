@@ -4,13 +4,13 @@
 #include "lil_uefi/lil_uefi.h"
 #include "shared/bitmap.h"
 
-static void fillScreen(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx_out, EFI_GRAPHICS_OUTPUT_BLT_PIXEL pixel)
+static void fillScreen(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx_out, Color_BGRA color)
 {
-    EFI_UINT32 * buffer = (EFI_UINT32 *) &pixel;
+    EFI_UINT32 * buffer = (EFI_UINT32 *) &color;
     gfx_out->Blt(gfx_out, buffer, EFI_GRAPHICS_OUTPUT_BLT_OPERATION_VideoFill, 0, 0, 0, 0, gfx_out->Mode->info->HorizontalResolution, gfx_out->Mode->info->VerticalResolution, 0);
 }
 
-static void drawRectangleToScreen(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx_out, EFI_UINT32 dx, EFI_UINT32 dy, EFI_UINT32 width, EFI_UINT32 height, EFI_GRAPHICS_OUTPUT_BLT_PIXEL color)
+static void drawRectangleToScreen(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx_out, EFI_UINT32 dx, EFI_UINT32 dy, EFI_UINT32 width, EFI_UINT32 height, Color_BGRA color)
 {
     EFI_UINT32 * buffer = (EFI_UINT32 *) &color;
     gfx_out->Blt(gfx_out, buffer, EFI_GRAPHICS_OUTPUT_BLT_OPERATION_VideoFill, 0, 0, dx, dy, width, height, 0);

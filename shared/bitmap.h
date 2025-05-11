@@ -34,7 +34,12 @@ static Bitmap * loadBitmap(EFI_UINT32 width, EFI_UINT32 height, EFI_UINT32 strid
 
 static Bitmap * bitmapFromScreenBuffer(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx_out)
 {
-    return loadBitmap(gfx_out->Mode->info->HorizontalResolution, gfx_out->Mode->info->VerticalResolution, gfx_out->Mode->info->PixelsPerScanLine, (const unsigned int *) gfx_out->Mode->frame_buffer_base);
+    return loadBitmap(
+        gfx_out->Mode->info->HorizontalResolution, 
+        gfx_out->Mode->info->VerticalResolution, 
+        gfx_out->Mode->info->PixelsPerScanLine, 
+        (const unsigned int *) gfx_out->Mode->frame_buffer_base
+    );
 }
 
 static void destroyBitmap(Bitmap * bitmap)
@@ -82,8 +87,8 @@ static void drawLineToBitmap(int x0, int y0, int x1, int y1, Bitmap * target, Co
     float yf = y0;
     for (EFI_UINT32 step = 0; step <= numSteps; ++step)
     {
-        int x = roundf(xf);
-        int y = roundf(yf);
+        int x = round(xf);
+        int y = round(yf);
         EFI_UINT32 index = y * target->stride + x;
         if (index >= 0 && index < y * target->stride * target->height){
             target->buffer[y * target->stride + x] = color;

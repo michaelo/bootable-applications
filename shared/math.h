@@ -21,39 +21,47 @@ static float radToDeg(float rad)
     return rad * (180.0 / M_PI);
 }
 
-static double cos(double x)
+static float cos(float x)
 {
-    asm("fldl %0;"
+    asm("flds %0;"
         "fcos;"
-        "fstpl %0"
+        "fstps %0"
         : "+m"(x)
     );
     return x;
 }
 
-static double sin(double x)
+static float sin(float x)
 {
-    asm("fldl %0;"
+    asm("flds %0;"
         "fsin;"
-        "fstpl %0"
+        "fstps %0"
         : "+m"(x)
     );
     return x;
 }
 
-static double tan(double x)
+static float tan(float x)
 {
     return (sin(x) / cos(x));
 }
 
-static double sqrt(double x)
+static float sqrt(float x)
 {
-    asm("fldl %0;"
+    asm("flds %0;"
         "fsqrt;"
-        "fstpl %0"
+        "fstps %0"
         : "+m"(x)
     );
     return x;
+}
+
+static float fmod(float x, float y)
+{
+    if (y == 0.0f) {
+        return 0.0f; // Handle division by zero gracefully
+    }
+    return x - (int)(x / y) * y;
 }
 
 static int abs(int v)
@@ -61,15 +69,7 @@ static int abs(int v)
     return v > 0 ? v : -v;
 }
 
-static double round(double x)
-{
-    if (x < 0.0)
-        return (int)(x - 0.5);
-    else
-        return (int)(x + 0.5);
-}
-
-static float roundf(float x)
+static float round(float x)
 {
     if (x < 0.0f)
         return (int)(x - 0.5f);

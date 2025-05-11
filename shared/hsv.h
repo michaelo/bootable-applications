@@ -6,7 +6,7 @@
 //Based on https://stackoverflow.com/a/14733008/2087791
 
 typedef struct Color_HSVA {
-    unsigned char h;
+    unsigned char h; //note: 0-255 rather than 0-360
     unsigned char s;
     unsigned char v;
     unsigned char a;
