@@ -5,6 +5,7 @@
 #include "shared/math.h"
 #include "shared/hsv.h"
 #include "shared/memory.h"
+#include "shared/text.h"
 
 #define dist(a, b, c, d) sqrt((float)((a - c) * (a - c) + (b - d) * (b - d)))
 
@@ -69,6 +70,18 @@ void plasma(float * staticData, Bitmap * backBuffer, float time, int interlacing
     }
 }
 
+void scrollingText(Bitmap * backBuffer, float t, const EFI_UINT16 * text, unsigned long long len)
+{
+    float speed = 20;
+    float startX = backBuffer->width - fmod(t * speed, backBuffer->width);
+    for (int i = 0; i < len; i++)
+    {
+        float x = startX + i * 8;
+        float y = backBuffer->height / 2 + 32 * sin(i * M_PI_M_2 / (32.0f) - t/2);
+        renderCharFg(backBuffer, x, y, color(0,0,0), text[i]);
+    }
+}
+
 // entry point
 EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 {
@@ -94,6 +107,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 
     float * staticData = initializeStaticData(screen);
     
+    const EFI_UINT16 * text = L"Hei NDC! Håper dere klapper masse på slutten! Hilsen Terje!";
     float t = 0;
     int interlacing = 0;
     plasma(staticData, backBuffer, t, interlacing);
@@ -108,6 +122,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
         status = boot_services->WaitForEvent(1, &loopEvent, &index);
         plasma(staticData, backBuffer, t, interlacing);
         drawBitmapToScreen(gfx_out, 0, 0, backBuffer);
+        scrollingText(screen, t, text, 62);
         t += 0.1f;
         interlacing = (interlacing + 1) % 2;
     }
