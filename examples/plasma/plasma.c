@@ -73,7 +73,7 @@ void plasma(float * staticData, Bitmap * backBuffer, float time, int interlacing
 void scrollingText(Bitmap * backBuffer, float t, const EFI_UINT16 * text, unsigned long long len)
 {
     float speed = 20;
-    float startX = backBuffer->width - fmod(t * speed, backBuffer->width);
+    float startX = backBuffer->width - fmod(t * speed, backBuffer->width * 2);
     for (int i = 0; i < len; i++)
     {
         float x = startX + i * 8;

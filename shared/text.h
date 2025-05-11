@@ -40,10 +40,12 @@ static void renderChar(Bitmap * bitmap, int dx, int dy, Color_BGRA bg, Color_BGR
     {
         for (int y = 0; y < 8; y++)
         {
+            int px = dx + x;
+            if (px < 0 || px > bitmap->width) continue;
+            int py = dy + y;
+            if (py < 0 || py > bitmap->height) continue;
             int set = glyph[y] & 1 << x;
-            EFI_UINT64 idx = (dy + y) * bitmap->stride + (dx + x);
-            if (idx < 0 || idx >= bufferSize)
-                continue;
+            EFI_UINT64 idx = py * bitmap->stride + px;
             bitmap->buffer[idx] = set ? fg : bg;
         }
     }
@@ -61,10 +63,12 @@ static void renderCharFg(Bitmap * bitmap, int dx, int dy, Color_BGRA fg, int ord
     {
         for (int y = 0; y < 8; y++)
         {
+            int px = dx + x;
+            if (px < 0 || px > bitmap->width) continue;
+            int py = dy + y;
+            if (py < 0 || py > bitmap->height) continue;
             int set = glyph[y] & 1 << x;
-            EFI_UINT64 idx = (dy + y) * bitmap->stride + (dx + x);
-            if (idx < 0 || idx >= bufferSize)
-                continue;
+            EFI_UINT64 idx = py * bitmap->stride + px;
             if (set) bitmap->buffer[idx] = fg;
         }
     }
