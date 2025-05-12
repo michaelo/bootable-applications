@@ -8,14 +8,13 @@
 
 #include "shared/screen_selectres.h" // For SelectResolution()
 
-// typedef struct
-// {
-//     EFI_HANDLE handle;
-//     EFI_SYSTEM_TABLE *system_table;
-// } Context;
-
+// int do_halt = 1;
 void RandomFill(EFI_SYSTEM_TABLE* system_table)
 {
+    // while (do_halt) {
+    //     asm volatile ("pause");
+    // }
+    
     // Assume we're inn graphics mode?
     EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx_out_prot = GetModeGraphics(system_table);
     ConsoleWrite(system_table->ConOut, 0, 0, L"Enter to exit. Any other key to fill random color.");
@@ -31,50 +30,35 @@ void RandomFill(EFI_SYSTEM_TABLE* system_table)
             break;
             
         fillScreen(gfx_out_prot, i32ToColor(rand()));
-        // ConsoleWrite(system_table->ConOut, 0, 0, L"Enter to exit. Any other key to fill random color.");
     }
 }
 
-// void Menu(Context ctx)
-// {
-//     EFI_UINTN event;
-//     EFI_INPUT_KEY key;
+void PrintImageAddress(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table) {
+    EFI_LOADED_IMAGE_PROTOCOL *loaded_image = NULL;
+    EFI_GUID guid = EFI_LOADED_IMAGE_PROTOCOL_GUID;
 
-//     // Set text mode
-//     EFI_GUID gfx_out_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
-//     struct EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx_out_prot;
+    system_table->BootServices->HandleProtocol(handle, &guid, (void**)&loaded_image);
 
-//     EFI_STATUS status;
-//     status = ctx.system_table->BootServices->LocateProtocol(&gfx_out_guid, 0, (void **)&gfx_out_prot);
+    EFI_UINT16 scrap[32];
+    EFI_UINTN len = 0;
 
-//     for (;;)
-//     {
-//         ctx.system_table->BootServices->WaitForEvent(1, &ctx.system_table->ConIn->WaitForKey, &event);
+    system_table->ConOut->OutputString(system_table->ConOut, L"Image base: ");
 
-//         // https://uefi.org/specs/UEFI/2.10/12_Protocols_Console_Support.html?highlight=waitforkey#efi-simple-text-input-protocol-readkeystroke
-//         ctx.system_table->ConIn->ReadKeyStroke(ctx.system_table->ConIn, &key);
+    len = FormatIntZ(scrap, 32, (EFI_UINTN)loaded_image->ImageBase, 16);
+    system_table->ConOut->OutputString(system_table->ConOut, scrap);
 
-//         if (key.UnicodeChar == 13)
-//             break;
-//     }
-// }
-
-// void DrawText(Context ctx, Pos, char* string)
-// {
-
-// }
+    // 108617728
+    // 0x6796000
+}
 
 // Entry point:
 // https://uefi.org/specs/UEFI/2.10/04_EFI_System_Table.html#efi-image-entry-point
 EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 {
+    initialize_memory(system_table->BootServices);
+
     EFI_UINTN event;
     EFI_INPUT_KEY key;
-
-    // Context ctx = {
-    //     .handle = handle,
-    //     .system_table = system_table,
-    // };
 
     // Prevent automatic 5min abort
     // https://uefi.org/specs/UEFI/2.10/03_Boot_Manager.html?highlight=minute#load-option-processing
@@ -83,13 +67,14 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     // For brevity
     EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *out = system_table->ConOut;
 
-    out->ClearScreen(out);
-
-    ConsoleWrite(out, 0, 0, L"Hello,");
-    ConsoleWrite(out, 0, 1, L"   UEFI!");
+    // out->ClearScreen(out);
 
     // Let's go!
+    ConsoleWrite(out, 0, 0, L"Step 1");
+    // PrintImageAddress(handle, system_table);
+    ConsoleWrite(out, 0, 0, L"Step 2");
     SelectResolution(system_table);
+    ConsoleWrite(out, 0, 0, L"Step 3");
     RandomFill(system_table);
     // Menu(ctx);
 

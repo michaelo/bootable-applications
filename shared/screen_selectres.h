@@ -17,15 +17,12 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
     // Problem now is as soon as we start selecting graphics mode we will loose console print to display
     //  Although, this is still testable on qemu where we have tty to terminal
     EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *text = SetModeText(system_table, 0);
-    // EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *out = system_table->ConOut;
 
     EFI_UINTN mode_num = 0;
     SetModeGraphics(system_table, mode_num);
     EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx = GetModeGraphics(system_table);
     EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *gfx_info;
     EFI_UINTN gfx_info_size;
-    
-    int alive = 1;
 
     EFI_UINT16 scrap[32];
     EFI_UINTN len = 0;
@@ -33,6 +30,8 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg = color(255, 255, 255);
 
     Bitmap * screen = bitmapFromScreenBuffer(gfx);
+
+    int alive = 1;
     while (alive)
     {
         EFI_UINTN xMargin = 50;
@@ -46,12 +45,12 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
         int tmpLen = renderStringFg(screen, x, y, fg, L"--- Select resolution (ref-box is 640*480) ---");
 
         x += tmpLen;
-        FormatIntZ(scrap, sizeof(scrap), mode_num+1);
+        FormatIntZ(scrap, sizeof(scrap), mode_num+1, 10);
         tmpLen = renderStringFg(screen, x, y, fg, scrap);
         x += tmpLen;
         tmpLen = renderStringFg(screen, x, y, fg, L"/");
         x += tmpLen;
-        FormatIntZ(scrap, sizeof(scrap), gfx->Mode->max_mode);
+        FormatIntZ(scrap, sizeof(scrap), gfx->Mode->max_mode, 10);
         tmpLen = renderStringFg(screen, x, y, fg, scrap);
 
         
@@ -61,11 +60,11 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
         renderStringFg(screen, xMargin, y, fg, L"Current resolution: ");
 
         y += 10;
-        FormatIntZ(scrap, sizeof(scrap) - 1, gfx_info->HorizontalResolution);
+        FormatIntZ(scrap, sizeof(scrap) - 1, gfx_info->HorizontalResolution, 10);
         renderStringFg(screen, xMargin + renderStringFg(screen, xMargin, y, fg, L"Width: "), 70, fg, scrap);
 
         y += 10;
-        FormatIntZ(scrap, sizeof(scrap) - 1, gfx_info->VerticalResolution);
+        FormatIntZ(scrap, sizeof(scrap) - 1, gfx_info->VerticalResolution, 10);
         renderStringFg(screen, xMargin + renderStringFg(screen, xMargin, y, fg, L"Height: "), 80, fg, scrap);
 
         y += 10;

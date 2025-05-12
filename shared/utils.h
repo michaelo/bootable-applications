@@ -68,14 +68,14 @@ static EFI_GRAPHICS_OUTPUT_PROTOCOL *SetModeGraphics(EFI_SYSTEM_TABLE *system_ta
     return out_prot;
 }
 
-static EFI_UINTN IntLen(EFI_UINTN value)
+static EFI_UINTN IntLen(EFI_UINTN value, EFI_UINTN base)
 {
     if (value == 0)
         return 1;
     EFI_UINTN len = 0;
     while (value > 0)
     {
-        value = value / 10;
+        value = value / base;
         len++;
     }
 
@@ -83,10 +83,16 @@ static EFI_UINTN IntLen(EFI_UINTN value)
 }
 
 // capacity: size, excluding e.g. terminating null - must be handled outside.
+// base: <=16
 // returns number of digits formatted
-static EFI_UINTN FormatInt(EFI_UINT16 *buffer, EFI_UINTN capacity, EFI_UINTN value)
+static EFI_UINTN FormatInt(EFI_UINT16 *buffer, EFI_UINTN capacity, EFI_UINTN value, EFI_UINTN base)
 {
-    EFI_UINTN digits = IntLen(value);
+    if(base > 16) {
+        return 0;
+    }
+    
+    static EFI_INT16 charmap[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+    EFI_UINTN digits = IntLen(value, base);
 
     // trunc
     if (digits > capacity)
@@ -94,18 +100,18 @@ static EFI_UINTN FormatInt(EFI_UINT16 *buffer, EFI_UINTN capacity, EFI_UINTN val
 
     for (int i = digits - 1; i >= 0; i--)
     {
-        EFI_UINTN digit = value % 10;
-        buffer[i] = '0' + digit;
-        value = value / 10;
+        EFI_UINTN digit = value % base;
+        buffer[i] = charmap[digit];
+        value = value / base;
     }
 
     return digits;
 }
 
 // capactiy: size, including terminating null.
-static EFI_UINTN FormatIntZ(EFI_UINT16 *buffer, EFI_UINTN capacity, EFI_UINTN value)
+static EFI_UINTN FormatIntZ(EFI_UINT16 *buffer, EFI_UINTN capacity, EFI_UINTN value, EFI_UINTN base)
 {
-    int len = FormatInt(buffer, capacity-1, value);
+    int len = FormatInt(buffer, capacity-1, value, base);
     buffer[len] = 0;
     return len;
 }
