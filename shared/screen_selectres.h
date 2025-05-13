@@ -29,47 +29,52 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
 
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg = color(255, 255, 255);
 
-    Bitmap * screen = bitmapFromScreenBuffer(gfx);
-
     int alive = 1;
     while (alive)
     {
         EFI_UINTN xMargin = 50;
         EFI_UINTN y = 50;
+
+        Bitmap screen = (Bitmap){
+            .width = gfx->Mode->info->HorizontalResolution,
+            .height = gfx->Mode->info->VerticalResolution,
+            .stride = gfx->Mode->info->PixelsPerScanLine,
+            .buffer = (const unsigned int *) gfx->Mode->frame_buffer_base
+        };
         
         text->ClearScreen(text);
         drawRectangleToScreen(gfx, 0, 0, 640, 480, color(128,0,128));
 
         // Write current resolution + help commands
         int x = xMargin;
-        int tmpLen = renderStringFg(screen, x, y, fg, L"--- Select resolution (ref-box is 640*480) ---");
+        int tmpLen = renderStringFg(&screen, x, y, fg, L"--- Select resolution (ref-box is 640*480) ---");
 
         x += tmpLen;
         FormatIntZ(scrap, sizeof(scrap), mode_num+1, 10);
-        tmpLen = renderStringFg(screen, x, y, fg, scrap);
+        tmpLen = renderStringFg(&screen, x, y, fg, scrap);
         x += tmpLen;
-        tmpLen = renderStringFg(screen, x, y, fg, L"/");
+        tmpLen = renderStringFg(&screen, x, y, fg, L"/");
         x += tmpLen;
         FormatIntZ(scrap, sizeof(scrap), gfx->Mode->max_mode, 10);
-        tmpLen = renderStringFg(screen, x, y, fg, scrap);
+        tmpLen = renderStringFg(&screen, x, y, fg, scrap);
 
         
         gfx->QueryMode(gfx, mode_num, &gfx_info_size, &gfx_info);
 
         y += 10;
-        renderStringFg(screen, xMargin, y, fg, L"Current resolution: ");
+        renderStringFg(&screen, xMargin, y, fg, L"Current resolution: ");
 
         y += 10;
         FormatIntZ(scrap, sizeof(scrap) - 1, gfx_info->HorizontalResolution, 10);
-        renderStringFg(screen, xMargin + renderStringFg(screen, xMargin, y, fg, L"Width: "), 70, fg, scrap);
+        renderStringFg(&screen, xMargin + renderStringFg(&screen, xMargin, y, fg, L"Width: "), 70, fg, scrap);
 
         y += 10;
         FormatIntZ(scrap, sizeof(scrap) - 1, gfx_info->VerticalResolution, 10);
-        renderStringFg(screen, xMargin + renderStringFg(screen, xMargin, y, fg, L"Height: "), 80, fg, scrap);
+        renderStringFg(&screen, xMargin + renderStringFg(&screen, xMargin, y, fg, L"Height: "), 80, fg, scrap);
 
         y += 10;
         y += 10;
-        renderStringFg(screen, xMargin, y, fg, L"Press Left/Right to iterate. Press Enter when happy.");
+        renderStringFg(&screen, xMargin, y, fg, L"Press Left/Right to iterate. Press Enter when happy.");
 
         
 
@@ -102,10 +107,7 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
         };
 
         SetModeGraphics(system_table, mode_num);
-        destroyBitmap(screen);
-        screen = bitmapFromScreenBuffer(gfx);
     }
-    destroyBitmap(screen);
 }
 
 #endif
