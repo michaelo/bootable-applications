@@ -39,7 +39,7 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
             .width = gfx->Mode->info->HorizontalResolution,
             .height = gfx->Mode->info->VerticalResolution,
             .stride = gfx->Mode->info->PixelsPerScanLine,
-            .buffer = (const unsigned int *) gfx->Mode->frame_buffer_base
+            .buffer = (void *) gfx->Mode->frame_buffer_base
         };
         
         text->ClearScreen(text);

@@ -25,7 +25,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
         .width = gfx->Mode->info->HorizontalResolution,
         .height = gfx->Mode->info->VerticalResolution,
         .stride = gfx->Mode->info->PixelsPerScanLine,
-        .buffer = (const unsigned int *) gfx->Mode->frame_buffer_base
+        .buffer = (void *) gfx->Mode->frame_buffer_base
     };
     drawLineToBitmap(0,0,120,120,&screen, color(255,255,0));
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg = color(0, 0, 0);
