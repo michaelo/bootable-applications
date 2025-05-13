@@ -47,7 +47,6 @@ void PrintImageAddress(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table) {
     len = FormatIntZ(scrap, 32, (EFI_UINTN)loaded_image->ImageBase, 16);
     system_table->ConOut->OutputString(system_table->ConOut, scrap);
 
-    // 108617728
     // 0x6796000
 }
 
@@ -55,8 +54,6 @@ void PrintImageAddress(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table) {
 // https://uefi.org/specs/UEFI/2.10/04_EFI_System_Table.html#efi-image-entry-point
 EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 {
-    initialize_memory(system_table->BootServices);
-
     EFI_UINTN event;
     EFI_INPUT_KEY key;
 
@@ -66,17 +63,16 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 
     // For brevity
     EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *out = system_table->ConOut;
-
-    // out->ClearScreen(out);
-
+    
     // Let's go!
-    ConsoleWrite(out, 0, 0, L"Step 1");
-    // PrintImageAddress(handle, system_table);
-    ConsoleWrite(out, 0, 0, L"Step 2");
+    out->ClearScreen(out);
+    ConsoleWrite(out, 0, 0, L"Step 1: ");
+    PrintImageAddress(handle, system_table);
+    BlockForKey(system_table, 13);
+    ConsoleWrite(out, 0, 0, L"Step 2: ");
     SelectResolution(system_table);
-    ConsoleWrite(out, 0, 0, L"Step 3");
+    ConsoleWrite(out, 0, 0, L"Step 3: ");
     RandomFill(system_table);
-    // Menu(ctx);
 
     out->ClearScreen(out);
     ConsoleWrite(out, 0, 0, L"Done! Enter to exit app.");
