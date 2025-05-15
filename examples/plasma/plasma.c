@@ -9,9 +9,9 @@
 
 #define dist(a, b, c, d) sqrt((float)((a - c) * (a - c) + (b - d) * (b - d)))
 
-float * initializeStaticData(Bitmap * screen)
+float * initializeStaticData(Bitmap * screen, Memory * memory)
 {
-    float * data = malloc(screen->width * screen->height * sizeof(float));
+    float * data = memory->malloc(memory, screen->width * screen->height * sizeof(float));
 
     //Position of the static points
     float p1x = screen->width * 0.25;
@@ -90,25 +90,22 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     EFI_BOOT_SERVICES *boot_services = system_table->BootServices;
     EFI_STATUS status;
 
-    initialize_memory(boot_services);
+    Memory memory = initializeMemory(boot_services);
 
     EFI_GUID gfx_out_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
     EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx_out;
-    status = boot_services->LocateProtocol(&gfx_out_guid, 0, (void **)&gfx_out);
-    if (status != 0)
-    {
-        return status;
-    }
+    boot_services->LocateProtocol(&gfx_out_guid, 0, (void **)&gfx_out);
+
     gfx_out->SetMode(gfx_out, 0);
 
     Bitmap screen;
     initializeBitmapFromScreenBuffer(&screen, gfx_out);    
-    Bitmap * backBuffer = allocateBitmap(screen.width, screen.height);
+    Bitmap * backBuffer = allocateBitmap(screen.width, screen.height, &memory);
     fillBitmap(backBuffer, color(0,0,0));
 
-    float * staticData = initializeStaticData(&screen);
+    float * staticData = initializeStaticData(&screen, &memory);
     
-    const EFI_UINT16 * text = L"Hei NDC! Håper dere klapper masse for Michael på slutten! Hilsen Terje!";
+    const EFI_UINT16 * text = L"Hei NDC! Håper dere klapper masse for Michael på slutten! Hilsen Terje";
     float t = 0;
     int interlacing = 0;
     plasma(staticData, backBuffer, t, interlacing);
@@ -116,14 +113,14 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 
     EFI_UINTN index;
     EFI_EVENT loopEvent;
-    status = boot_services->CreateEvent(EFI_EVT_TIMER, EFI_TPL_CALLBACK, NULL, (void *)NULL, &loopEvent);
-    status = boot_services->SetTimer(loopEvent, EFI_TIMER_DELAY_Periodic, 166000);
+    boot_services->CreateEvent(EFI_EVT_TIMER, EFI_TPL_CALLBACK, NULL, (void *)NULL, &loopEvent);
+    boot_services->SetTimer(loopEvent, EFI_TIMER_DELAY_Periodic, 166000);
     for (;;)
     {
         status = boot_services->WaitForEvent(1, &loopEvent, &index);
         plasma(staticData, backBuffer, t, interlacing);
         drawBitmapToScreen(gfx_out, 0, 0, backBuffer);
-        scrollingText(&screen, t, text, 62);
+        scrollingText(&screen, t, text, 71);
         t += 0.1f;
         interlacing = (interlacing + 1) % 2;
     }
