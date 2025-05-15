@@ -24,7 +24,7 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
     EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *gfx_info;
     EFI_UINTN gfx_info_size;
 
-    EFI_UINT16 scrap[32];
+    EFI_UINT16 scrap[128];
     EFI_UINTN len = 0;
 
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg = color(255, 255, 255);
@@ -47,30 +47,14 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
 
         // Write current resolution + help commands
         int x = xMargin;
-        int tmpLen = renderStringFg(&screen, x, y, fg, L"--- Select resolution (ref-box is 640*480) ---");
-
-        x += tmpLen;
-        FormatIntZ(scrap, sizeof(scrap), mode_num+1, 10);
-        tmpLen = renderStringFg(&screen, x, y, fg, scrap);
-        x += tmpLen;
-        tmpLen = renderStringFg(&screen, x, y, fg, L"/");
-        x += tmpLen;
-        FormatIntZ(scrap, sizeof(scrap), gfx->Mode->max_mode, 10);
-        tmpLen = renderStringFg(&screen, x, y, fg, scrap);
-
+        FormatterZ(scrap, sizeof(scrap), L"--- Select resolution (ref-box is 640*480) --- mode: %d/%d", mode_num+1, gfx->Mode->max_mode);
+        int tmpLen = renderStringFg(&screen, x, y, fg, scrap);
         
         gfx->QueryMode(gfx, mode_num, &gfx_info_size, &gfx_info);
 
         y += 10;
-        renderStringFg(&screen, xMargin, y, fg, L"Current resolution: ");
-
-        y += 10;
-        FormatIntZ(scrap, sizeof(scrap) - 1, gfx_info->HorizontalResolution, 10);
-        renderStringFg(&screen, xMargin + renderStringFg(&screen, xMargin, y, fg, L"Width: "), 70, fg, scrap);
-
-        y += 10;
-        FormatIntZ(scrap, sizeof(scrap) - 1, gfx_info->VerticalResolution, 10);
-        renderStringFg(&screen, xMargin + renderStringFg(&screen, xMargin, y, fg, L"Height: "), 80, fg, scrap);
+        FormatterZ(scrap, sizeof(scrap), L"Current resolution: %d x %d", gfx_info->HorizontalResolution, gfx_info->VerticalResolution);
+        renderStringFg(&screen, xMargin, y, fg, scrap);
 
         y += 10;
         y += 10;
