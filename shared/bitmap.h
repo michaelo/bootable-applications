@@ -1,7 +1,6 @@
 #ifndef BITMAP_H
 #define BITMAP_H
 
-#include "shared/memory.h"
 #include "shared/math.h"
 #include "shared/color.h"
 
@@ -12,7 +11,7 @@ typedef struct Bitmap {
     Color_BGRA * buffer;
 } Bitmap;
 
-static Bitmap * createBitmap(EFI_UINT32 width, EFI_UINT32 height)
+static Bitmap * allocateBitmap(EFI_UINT32 width, EFI_UINT32 height, void* malloc(unsigned long long))
 {
     Bitmap * bitmap = (Bitmap*) malloc(sizeof(Bitmap) + sizeof(Color_BGRA) * width * height);
     bitmap->width = width;
@@ -22,29 +21,26 @@ static Bitmap * createBitmap(EFI_UINT32 width, EFI_UINT32 height)
     return bitmap;
 }
 
-static Bitmap * loadBitmap(EFI_UINT32 width, EFI_UINT32 height, EFI_UINT32 stride, const unsigned int * buffer)
+static Bitmap * initializeBitmapFromBuffer(Bitmap * bitmap, EFI_UINT32 width, EFI_UINT32 height, EFI_UINT32 stride, const unsigned int * buffer)
 {
-    Bitmap * bitmap = (Bitmap *)malloc(sizeof(Bitmap));
-    bitmap->width = width;
-    bitmap->height = height;
-    bitmap->stride = stride;
-    bitmap->buffer = (Color_BGRA*) buffer;
+    *bitmap = (Bitmap) {
+        .width = width,
+        .height = height,
+        .stride = stride,
+        .buffer = (Color_BGRA*)buffer       
+    };
     return bitmap;
 }
 
-static Bitmap * bitmapFromScreenBuffer(EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx_out)
+static Bitmap * initializeBitmapFromScreenBuffer(Bitmap * bitmap, EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx_out)
 {
-    return loadBitmap(
+    return initializeBitmapFromBuffer(
+        bitmap,
         gfx_out->Mode->info->HorizontalResolution, 
         gfx_out->Mode->info->VerticalResolution, 
         gfx_out->Mode->info->PixelsPerScanLine, 
         (const unsigned int *) gfx_out->Mode->frame_buffer_base
     );
-}
-
-static void destroyBitmap(Bitmap * bitmap)
-{
-    free(bitmap);
 }
 
 static void fillBitmap(Bitmap * bitmap, Color_BGRA color)

@@ -11,6 +11,11 @@
 
 int _fltused = 0;
 
+static void useFloatingPointMath()
+{
+    *((int volatile *)&_fltused)=0; //prevent LTO from removing the marker symbol _fltused
+}
+
 static float degToRad(float deg)
 {
     return deg / (180.0 / M_PI);

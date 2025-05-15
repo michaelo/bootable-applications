@@ -85,7 +85,7 @@ void scrollingText(Bitmap * backBuffer, float t, const EFI_UINT16 * text, unsign
 // entry point
 EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 {
-    *((int volatile *)&_fltused)=0; //prevent LTO from removing the marker symbol _fltused
+    useFloatingPointMath();
 
     EFI_BOOT_SERVICES *boot_services = system_table->BootServices;
     EFI_STATUS status;
@@ -101,13 +101,14 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     }
     gfx_out->SetMode(gfx_out, 0);
 
-    Bitmap * screen = bitmapFromScreenBuffer(gfx_out);    
-    Bitmap * backBuffer = createBitmap(screen->width, screen->height);
+    Bitmap screen;
+    initializeBitmapFromScreenBuffer(&screen, gfx_out);    
+    Bitmap * backBuffer = allocateBitmap(screen.width, screen.height);
     fillBitmap(backBuffer, color(0,0,0));
 
-    float * staticData = initializeStaticData(screen);
+    float * staticData = initializeStaticData(&screen);
     
-    const EFI_UINT16 * text = L"Hei NDC! Håper dere klapper masse på slutten! Hilsen Terje!";
+    const EFI_UINT16 * text = L"Hei NDC! Håper dere klapper masse for Michael på slutten! Hilsen Terje!";
     float t = 0;
     int interlacing = 0;
     plasma(staticData, backBuffer, t, interlacing);
@@ -122,7 +123,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
         status = boot_services->WaitForEvent(1, &loopEvent, &index);
         plasma(staticData, backBuffer, t, interlacing);
         drawBitmapToScreen(gfx_out, 0, 0, backBuffer);
-        scrollingText(screen, t, text, 62);
+        scrollingText(&screen, t, text, 62);
         t += 0.1f;
         interlacing = (interlacing + 1) % 2;
     }
