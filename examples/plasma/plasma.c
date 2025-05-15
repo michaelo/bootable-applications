@@ -1,4 +1,3 @@
-#include <stddef.h>
 #include "lil_uefi/lil_uefi.h"
 #include "shared/rand.h"
 #include "shared/draw.h"
@@ -35,11 +34,6 @@ float * initializeStaticData(Bitmap * screen, Memory * memory)
 
 void plasma(float * staticData, Bitmap * backBuffer, float time, int interlacing)
 {
-    Color_HSVA hsva;
-    hsva.s = 255;
-    hsva.v = 255;
-    hsva.a = 255;
-
     int w = backBuffer->width;
     int h = backBuffer->height;
     float xPos = w / 2 + (w * cos(time / 13));
@@ -64,21 +58,20 @@ void plasma(float * staticData, Bitmap * backBuffer, float time, int interlacing
 
             value += 3.5; //shift into something more visually appealing, with deep red on one end and deep purple on the other
             value = fmod(value + 8, 8) / 8; // Normalize to [0, 1]
-            hsva.h = (unsigned char)(value * 255); // Map to [0, 255]
-            backBuffer->buffer[pos] = HsvToRgb(hsva);
+            backBuffer->buffer[pos] = HueToRgb((unsigned char)(value * 255));
         }
     }
 }
 
 void scrollingText(Bitmap * backBuffer, float t, const EFI_UINT16 * text, unsigned long long len)
 {
-    float speed = 20;
-    float startX = backBuffer->width - fmod(t * speed, backBuffer->width * 2);
+    float speed = 40;
+    float startX = backBuffer->width - fmod(t * speed, backBuffer->width * 4);
     for (int i = 0; i < len; i++)
     {
-        float x = startX + i * 8;
+        float x = startX + i * 24;
         float y = backBuffer->height / 2 + 32 * sin(i * M_PI_M_2 / (32.0f) - t/2);
-        renderCharFg(backBuffer, x, y, color(0,0,0), text[i]);
+        renderCharFgSize(backBuffer, x, y, color(0,0,0), 24, text[i]);
     }
 }
 

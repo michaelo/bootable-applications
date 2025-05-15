@@ -12,6 +12,43 @@ typedef struct Color_HSVA {
     unsigned char a;
 } Color_HSVA;
 
+static Color_BGRA HueToRgb(unsigned char hue)
+{
+    Color_BGRA bgra;
+    unsigned char region = hue / 43;
+    unsigned char remainder = (hue % 43) * 6;
+    unsigned char max = 255;
+
+    unsigned char p = 0;
+    unsigned char q = max - ((max * remainder) >> 8);
+    unsigned char t = ((max * remainder) >> 8);
+
+    switch (region)
+    {
+        case 0:
+            bgra.Red = max; bgra.Green = t; bgra.Blue = p;
+            break;
+        case 1:
+            bgra.Red = q; bgra.Green = max; bgra.Blue = p;
+            break;
+        case 2:
+            bgra.Red = p; bgra.Green = max; bgra.Blue = t;
+            break;
+        case 3:
+            bgra.Red = p; bgra.Green = q; bgra.Blue = max;
+            break;
+        case 4:
+            bgra.Red = t; bgra.Green = p; bgra.Blue = max;
+            break;
+        default:
+            bgra.Red = max; bgra.Green = p; bgra.Blue = q;
+            break;
+    }
+
+    return bgra;
+}
+
+
 static Color_BGRA HsvToRgb(Color_HSVA hsva)
 {
     Color_BGRA bgra;
