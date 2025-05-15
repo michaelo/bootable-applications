@@ -1,4 +1,3 @@
-#include <stddef.h>
 #include "lil_uefi/lil_uefi.h"
 #include "shared/rand.h"
 #include "shared/draw.h"
