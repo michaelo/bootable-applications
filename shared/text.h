@@ -87,6 +87,42 @@ static EFI_UINT64 renderString(Bitmap * bitmap, int dx, int dy, Color_BGRA bg, C
     return cidx * 8;
 }
 
+static void renderCharSize(Bitmap * bitmap, int dx, int dy, Color_BGRA bg, Color_BGRA fg, EFI_UINT16 size, int ord)
+{
+    char * glyph = getGlyph(ord);
+    if (!glyph)
+        return;
+
+    float scale = 8/(float)size;
+
+    EFI_UINTN bufferSize = bitmap->height * bitmap->stride;
+    for (int x = 0; x < size; x++)
+    {
+        for (int y = 0; y < size; y++)
+        {
+            int px = dx + x;
+            if (px < 0 || px > bitmap->width) continue;
+            int py = dy + y;
+            if (py < 0 || py > bitmap->height) continue;
+            int set = glyph[(int)(y*scale)] & 1 << (int)(x*scale);
+            EFI_UINT64 idx = py * bitmap->stride + px;
+            bitmap->buffer[idx] = set ? fg : bg;
+        }
+    }
+}
+
+static EFI_UINT64 renderStringSize(Bitmap * bitmap, int dx, int dy, Color_BGRA bg, Color_BGRA fg, EFI_UINT16 size, EFI_UINT16 *text)
+{
+    // assumes text is eventually null-terminated
+    // float scale = 
+    int cidx = 0;
+    while(text[cidx] != 0) {
+        renderCharSize(bitmap, dx+(size*cidx), dy, bg, fg, size, text[cidx]);
+        cidx += 1;
+    }
+    return cidx * 8;
+}
+
 // Returns length of string - consider returning final x-coordinat for direct usage
 static EFI_UINT64 renderStringFg(Bitmap * bitmap, int dx, int dy, Color_BGRA fg, EFI_UINT16 *text)
 {
@@ -95,6 +131,42 @@ static EFI_UINT64 renderStringFg(Bitmap * bitmap, int dx, int dy, Color_BGRA fg,
     while (text[cidx] != 0)
     {
         renderCharFg(bitmap, dx + (8 * cidx), dy, fg, text[cidx]);
+        cidx += 1;
+    }
+    return cidx * 8;
+}
+
+static void renderCharFgSize(Bitmap * bitmap, int dx, int dy, Color_BGRA fg, EFI_UINT16 size, int ord)
+{
+    char * glyph = getGlyph(ord);
+    if (!glyph)
+        return;
+
+    float scale = 8/(float)size;
+
+    EFI_UINTN bufferSize = bitmap->height * bitmap->stride;
+    for (int x = 0; x < size; x++)
+    {
+        for (int y = 0; y < size; y++)
+        {
+            int px = dx + x;
+            if (px < 0 || px > bitmap->width) continue;
+            int py = dy + y;
+            if (py < 0 || py > bitmap->height) continue;
+            int set = glyph[(int)(y*scale)] & 1 << (int)(x*scale);
+            EFI_UINT64 idx = py * bitmap->stride + px;
+            if (set) bitmap->buffer[idx] = fg;
+        }
+    }
+}
+
+static EFI_UINT64 renderStringFgSize(Bitmap * bitmap, int dx, int dy, Color_BGRA fg, EFI_UINTN size, EFI_UINT16 *text)
+{
+    // assumes text is eventually null-terminated
+    int cidx = 0;
+    while (text[cidx] != 0)
+    {
+        renderCharFgSize(bitmap, dx + (size * cidx), dy, fg, size, text[cidx]);
         cidx += 1;
     }
     return cidx * 8;

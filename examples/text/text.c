@@ -16,25 +16,51 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     out->ClearScreen(out);
 
     SelectResolution(system_table);
-    fillScreen(gfx, color(96,0,0));
-
-    drawRectangleToScreen(gfx, 10, 10, 95, 95, color(128, 0, 0));
-
-    drawRectangleToScreen(gfx, 150, 70, 95, 120, color(128, 128, 0));
 
     Bitmap screen;
     initializeBitmapFromScreenBuffer(&screen, gfx);
-    drawLineToBitmap(0,0,120,120,&screen, color(255,255,0));
+    
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg = color(0, 0, 0);
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg = color(255, 255, 255);
 
+    EFI_UINTN font_size = 8;
+    int alive = 1;
+    while(alive) {
+        EFI_UINTN event_idx;
+        EFI_INPUT_KEY key;
 
-    renderStringFg(&screen, 100, 100, fg, L"Woop woop - this is all good! ha æøå da");
+        fillScreen(gfx, color(96,0,0));
+        drawRectangleToScreen(gfx, 10, 10, 95, 95, color(128, 0, 0));
+        drawRectangleToScreen(gfx, 150, 70, 95, 120, color(128, 128, 0));
+        drawLineToBitmap(0,0,120,120,&screen, color(255,255,0));
 
-    renderStringFg(&screen, 100, 200, fg, L"Press Enter to shutdown");
+        renderStringFgSize(&screen, 100, 100, fg, font_size, L"Woop woop - this is all good! ha æøå da");
+        renderStringFgSize(&screen, 100, 200, fg, font_size, L"Press Left/right to change font size. Enter to shutdown.");
 
-    BlockForKey(system_table, 13);
-    system_table->RuntimeServices->ResetSystem(EFI_RESET_TYPE_Shutdown, 0, 0, NULL);
+        system_table->BootServices->WaitForEvent(1, &system_table->ConIn->WaitForKey, &event_idx);
+        system_table->ConIn->ReadKeyStroke(system_table->ConIn, &key);
+        switch (key.ScanCode)
+        {
+        case EFI_SCAN_Left:
+            if (font_size > 0)
+                font_size -= 1;
+            break;
+        case EFI_SCAN_Right:
+            if (font_size < gfx->Mode->max_mode - 1)
+                font_size += 1;
+            break;
+        default:
+            switch (key.UnicodeChar)
+            {
+            case 13:
+                alive = 0;
+                break;
+            default:
+                break;
+            }
+            break;
+        };
+    }
 
     return (0);
 }
