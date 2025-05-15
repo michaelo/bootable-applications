@@ -67,11 +67,14 @@ void scrollingText(Bitmap * backBuffer, float t, const EFI_UINT16 * text, unsign
 {
     float speed = 40;
     float startX = backBuffer->width - fmod(t * speed, backBuffer->width * 4);
+    Color_BGRA bg = color(0,0,0);
+    bg.Reserved = 1;
+    Color_BGRA fg = color(0,0,0);
     for (int i = 0; i < len; i++)
     {
         float x = startX + i * 24;
         float y = backBuffer->height / 2 + 32 * sin(i * M_PI_M_2 / (32.0f) - t/2);
-        renderCharFgSize(backBuffer, x, y, color(0,0,0), 24, text[i]);
+        renderChar(backBuffer, x, y, bg, fg, 24, text[i]);
     }
 }
 
