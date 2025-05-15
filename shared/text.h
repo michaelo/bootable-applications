@@ -4,7 +4,7 @@
 #include "lil_uefi/lil_uefi.h"
 #include <stddef.h>
 #include <stdarg.h>
-
+#include "shared/utils.h"
 #include "font8x8/font8x8_latin.h"
 
 static char *getGlyph(int ord)
