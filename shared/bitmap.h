@@ -3,6 +3,7 @@
 
 #include "shared/math.h"
 #include "shared/color.h"
+#include "shared/memory.h"
 
 typedef struct Bitmap {
     EFI_UINT32 width;
@@ -11,9 +12,9 @@ typedef struct Bitmap {
     Color_BGRA * buffer;
 } Bitmap;
 
-static Bitmap * allocateBitmap(EFI_UINT32 width, EFI_UINT32 height, void* malloc(unsigned long long))
+static Bitmap * allocateBitmap(EFI_UINT32 width, EFI_UINT32 height, Memory * memory)
 {
-    Bitmap * bitmap = (Bitmap*) malloc(sizeof(Bitmap) + sizeof(Color_BGRA) * width * height);
+    Bitmap * bitmap = (Bitmap*) memory->malloc(memory, sizeof(Bitmap) + sizeof(Color_BGRA) * width * height);
     bitmap->width = width;
     bitmap->height = height;
     bitmap->stride = width;

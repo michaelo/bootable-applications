@@ -3,35 +3,49 @@
 
 #include "lil_uefi/lil_uefi.h"
 
-EFI_BOOT_SERVICES *boot_services;
+typedef struct Memory_S {
+    const EFI_BOOT_SERVICES *boot_services;
+    void* (*malloc)(struct Memory_S *, unsigned long long);
+    void* (*memcpy)(struct Memory_S *, void * dst, const void * src, unsigned long long len);
+    void* (*memset)(struct Memory_S *, void * dst, int value, unsigned long long len);
+    void (*free)(struct Memory_S *, void * ptr);
+} Memory;
 
-static void initialize_memory(EFI_BOOT_SERVICES *boot_services_ptr){
-    boot_services = boot_services_ptr;
-}
-
-static void * malloc(unsigned long long size)
+static void * memory_h_malloc(Memory * this_, unsigned long long size)
 {
     EFI_STATUS error;
     void * handle;
-    error = boot_services->AllocatePool(EFI_MEMORY_TYPE_EfiLoaderData, size, &handle);
+    error = this_->boot_services->AllocatePool(EFI_MEMORY_TYPE_EfiLoaderData, size, &handle);
     return error ? 0 : handle;
 }
 
-static void free(void * ptr)
+static void memory_h_free(Memory * this_, void * ptr)
 {
-    boot_services->FreePool(ptr);
+    this_->boot_services->FreePool(ptr);
 }
 
-static void * memcpy(void * dst, const void * src, unsigned long long len)
+static void * memory_h_memcpy(Memory * this_, void * dst, const void * src, unsigned long long len)
 {
-    boot_services->CopyMem(dst, (void*)src, len);
+    this_->boot_services->CopyMem(dst, (void*)src, len);
     return dst;
 }
 
-static void * memset(void * dst, int value, unsigned long long len)
+static void * memory_h_memset(Memory * this_, void * dst, int value, unsigned long long len)
 {
-    boot_services->SetMem(dst, len, value);
+    this_->boot_services->SetMem(dst, len, value);
     return dst;
+}
+
+static Memory initializeMemory(EFI_BOOT_SERVICES *boot_services_ptr)
+{
+    Memory memory = {
+        .boot_services = boot_services_ptr,
+        .malloc = memory_h_malloc,
+        .memcpy = memory_h_memcpy,
+        .memset = memory_h_memset,
+        .free = memory_h_free
+    };
+    return memory;
 }
 
 #endif
