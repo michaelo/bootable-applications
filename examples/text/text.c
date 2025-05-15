@@ -21,7 +21,10 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     initializeBitmapFromScreenBuffer(&screen, gfx);
     
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg = color(0, 0, 0);
+    bg.Reserved = 1; // transparent
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg = color(255, 255, 255);
+    EFI_GRAPHICS_OUTPUT_BLT_PIXEL outline = color(127, 0, 127);
+    EFI_GRAPHICS_OUTPUT_BLT_PIXEL outline_fg = color(255, 255, 255);
 
     EFI_UINTN font_size = 8;
     int alive = 1;
@@ -34,8 +37,10 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
         drawRectangleToScreen(gfx, 150, 70, 95, 120, color(128, 128, 0));
         drawLineToBitmap(0,0,120,120,&screen, color(255,255,0));
 
-        renderStringFgSize(&screen, 100, 100, fg, font_size, L"Woop woop - this is all good! ha æøå da");
-        renderStringFgSize(&screen, 100, 200, fg, font_size, L"Press Left/right to change font size. Enter to shutdown.");
+        renderStringOutline(&screen, 100, 100, outline_fg, outline, 2, font_size, L"Woop woop - this is all good! ha æøå da");
+        renderString(&screen, 100, 200, bg, fg, font_size, L"Press Left/right to change font size. Enter to shutdown.");
+
+        renderString(&screen, 50, 300, fg, bg, font_size, L"Inverted text");
 
         system_table->BootServices->WaitForEvent(1, &system_table->ConIn->WaitForKey, &event_idx);
         system_table->ConIn->ReadKeyStroke(system_table->ConIn, &key);

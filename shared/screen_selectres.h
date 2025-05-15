@@ -28,6 +28,8 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
     EFI_UINTN len = 0;
 
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg = color(255, 255, 255);
+    EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg = color(0, 0, 0);
+    bg.Reserved = 1; // transparent
 
     int alive = 1;
     Bitmap screen;
@@ -44,19 +46,17 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
         // Write current resolution + help commands
         int x = xMargin;
         FormatterZ(scrap, sizeof(scrap), L"--- Select resolution (ref-box is 640*480) --- mode: %d/%d", mode_num+1, gfx->Mode->max_mode);
-        int tmpLen = renderStringFg(&screen, x, y, fg, scrap);
+        int tmpLen = renderString(&screen, x, y, bg, fg, 8, scrap);
         
         gfx->QueryMode(gfx, mode_num, &gfx_info_size, &gfx_info);
 
         y += 10;
         FormatterZ(scrap, sizeof(scrap), L"Current resolution: %d x %d", gfx_info->HorizontalResolution, gfx_info->VerticalResolution);
-        renderStringFg(&screen, xMargin, y, fg, scrap);
+        renderString(&screen, xMargin, y, bg, fg, 8, scrap);
 
         y += 10;
         y += 10;
-        renderStringFg(&screen, xMargin, y, fg, L"Press Left/Right to iterate. Press Enter when happy.");
-
-        
+        renderString(&screen, xMargin, y, bg, fg, 8, L"Press Left/Right to iterate. Press Enter when happy.");
 
         // Wait for response
         system_table->BootServices->WaitForEvent(1, &system_table->ConIn->WaitForKey, &event);
