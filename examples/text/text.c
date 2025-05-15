@@ -7,6 +7,7 @@
 
 EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 {
+    useFloatingPointMath();
     // Prevent automatic 5min abort
     system_table->BootServices->SetWatchdogTimer(0, 0, 0, NULL);
 
@@ -21,12 +22,8 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 
     drawRectangleToScreen(gfx, 150, 70, 95, 120, color(128, 128, 0));
 
-    Bitmap screen = (Bitmap){
-        .width = gfx->Mode->info->HorizontalResolution,
-        .height = gfx->Mode->info->VerticalResolution,
-        .stride = gfx->Mode->info->PixelsPerScanLine,
-        .buffer = (void *) gfx->Mode->frame_buffer_base
-    };
+    Bitmap screen;
+    initializeBitmapFromScreenBuffer(&screen, gfx);
     drawLineToBitmap(0,0,120,120,&screen, color(255,255,0));
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg = color(0, 0, 0);
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg = color(255, 255, 255);

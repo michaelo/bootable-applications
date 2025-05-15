@@ -30,17 +30,13 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg = color(255, 255, 255);
 
     int alive = 1;
+    Bitmap screen;
     while (alive)
     {
         EFI_UINTN xMargin = 50;
         EFI_UINTN y = 50;
 
-        Bitmap screen = (Bitmap){
-            .width = gfx->Mode->info->HorizontalResolution,
-            .height = gfx->Mode->info->VerticalResolution,
-            .stride = gfx->Mode->info->PixelsPerScanLine,
-            .buffer = (void *) gfx->Mode->frame_buffer_base
-        };
+        initializeBitmapFromScreenBuffer(&screen, gfx);
         
         text->ClearScreen(text);
         drawRectangleToScreen(gfx, 0, 0, 640, 480, color(128,0,128));
