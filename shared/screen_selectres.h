@@ -13,9 +13,6 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
     EFI_INPUT_KEY key;
 
     // Set text mode: list all resolutions and prompt user for number
-    // Later: find lowest initial resolution and render text on graphic out
-    // Problem now is as soon as we start selecting graphics mode we will loose console print to display
-    //  Although, this is still testable on qemu where we have tty to terminal
     EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *text = SetModeText(system_table, 0);
 
     EFI_UINTN mode_num = 0;
@@ -33,30 +30,31 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
 
     int alive = 1;
     Bitmap screen;
+
+    EFI_UINTN font_size = 8;
     while (alive)
     {
         EFI_UINTN xMargin = 50;
         EFI_UINTN y = 50;
+        EFI_UINTN line_height = font_size * 1.5;
 
         initializeBitmapFromScreenBuffer(&screen, gfx);
         
-        text->ClearScreen(text);
         drawRectangleToScreen(gfx, 0, 0, 640, 480, color(128,0,128));
 
         // Write current resolution + help commands
         int x = xMargin;
-        FormatterZ(scrap, sizeof(scrap), L"--- Select resolution (ref-box is 640*480) --- mode: %d/%d", mode_num+1, gfx->Mode->max_mode);
-        int tmpLen = renderString(&screen, x, y, bg, fg, 8, scrap);
+        renderStringF(&screen, x, y, bg, fg, font_size, scrap, sizeof(scrap), L"--- Select resolution (ref-box is 640*480) ---");
         
         gfx->QueryMode(gfx, mode_num, &gfx_info_size, &gfx_info);
 
-        y += 10;
-        FormatterZ(scrap, sizeof(scrap), L"Current resolution: %d x %d", gfx_info->HorizontalResolution, gfx_info->VerticalResolution);
-        renderString(&screen, xMargin, y, bg, fg, 8, scrap);
+        y += line_height;
+        y += line_height;
+        renderStringF(&screen, xMargin, y, bg, fg, font_size, scrap, sizeof(scrap), L"Current resolution: %d x %d (mode: %d/%d)", gfx_info->HorizontalResolution, gfx_info->VerticalResolution, mode_num+1, gfx->Mode->max_mode);
 
-        y += 10;
-        y += 10;
-        renderString(&screen, xMargin, y, bg, fg, 8, L"Press Left/Right to iterate. Press Enter when happy.");
+        y += line_height;
+        y += line_height;
+        renderString(&screen, xMargin, y, bg, fg, font_size, L"Press Left/Right to iterate. Press Enter when happy.");
 
         // Wait for response
         system_table->BootServices->WaitForEvent(1, &system_table->ConIn->WaitForKey, &event);
@@ -73,6 +71,14 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
         case EFI_SCAN_Right:
             if (mode_num < gfx->Mode->max_mode - 1)
                 mode_num += 1;
+            break;
+        case EFI_SCAN_Down:
+            if (font_size > 0)
+                font_size -= 1;
+            break;
+        case EFI_SCAN_Up:
+            if (font_size < 64)
+                font_size += 1;
             break;
         default:
             switch (key.UnicodeChar)
