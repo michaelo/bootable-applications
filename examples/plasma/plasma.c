@@ -72,7 +72,7 @@ void scrollingText(Bitmap * backBuffer, float t, const char * text, unsigned lon
     Color_BGRA bg = color(0,0,0);
     bg.Reserved = 1;
     Color_BGRA fg = color(0,0,0);
-    Color_BGRA outline = color(0,0,0);
+    Color_BGRA outline = color(255,255,255);
 
     int xoffsets[8] = {-1,0,1,-1,1,-1,0,1};
     int yoffsets[8] = {-1,-1,-1,0,0,1,1,1};
@@ -81,11 +81,7 @@ void scrollingText(Bitmap * backBuffer, float t, const char * text, unsigned lon
     {
         float x = startX + i * 24;
         float y = backBuffer->height / 2 + 32 * sin(i * M_PI_M_2 / (32.0f) - t/2);
-        for (int j = 0; j < 8; j++)
-        {
-            renderChar(backBuffer, x+xoffsets[j], y + yoffsets[j], bg, outline, 24, text[i]);
-        }
-        renderChar(backBuffer, x, y, bg, fg, 24, text[i]);
+        renderCharOutline(backBuffer, x, y, fg, outline, 2, 24, text[i]);
     }
 }
 

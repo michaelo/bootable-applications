@@ -119,6 +119,23 @@ static void renderChar(Bitmap *bitmap, int dx, int dy, Color_BGRA bg, Color_BGRA
     }
 }
 
+static void renderCharOutline(Bitmap *bitmap, int dx, int dy, Color_BGRA fg, Color_BGRA outline, EFI_UINT16 outline_size, EFI_UINT16 size, EFI_UINT16 c)
+{
+    EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg = color(0, 0, 0);
+    bg.Reserved = 1; // transparent
+
+    renderChar(bitmap, dx - outline_size, dy - outline_size, bg, outline, size, c);
+    renderChar(bitmap, dx, dy - outline_size, bg, outline, size, c);
+    renderChar(bitmap, dx + outline_size, dy - outline_size, bg, outline, size, c);
+    renderChar(bitmap, dx - outline_size, dy, bg, outline, size, c);
+    renderChar(bitmap, dx + outline_size, dy, bg, outline, size, c);
+    renderChar(bitmap, dx - outline_size, dy + outline_size, bg, outline, size, c);
+    renderChar(bitmap, dx, dy + outline_size, bg, outline, size, c);
+    renderChar(bitmap, dx + outline_size, dy + outline_size, bg, outline, size, c);
+
+    renderChar(bitmap, dx, dy, bg, fg, size, c);
+}
+
 // Exploring alternative char/glyph-rendering for optimization purposes
 static void renderCharOptimizeTest(Bitmap *bitmap, int dx, int dy, Color_BGRA bg, Color_BGRA fg, EFI_UINT16 size, int ord)
 {
