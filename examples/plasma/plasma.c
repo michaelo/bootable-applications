@@ -1,3 +1,5 @@
+#define BASIC_TEXT
+
 #include "lil_uefi/lil_uefi.h"
 #include "shared/rand.h"
 #include "shared/draw.h"
@@ -63,17 +65,26 @@ void plasma(float * staticData, Bitmap * backBuffer, float time, int interlacing
     }
 }
 
-void scrollingText(Bitmap * backBuffer, float t, const EFI_UINT16 * text, unsigned long long len)
+void scrollingText(Bitmap * backBuffer, float t, const char * text, unsigned long long len)
 {
     float speed = 40;
     float startX = backBuffer->width - fmod(t * speed, backBuffer->width * 4);
     Color_BGRA bg = color(0,0,0);
     bg.Reserved = 1;
     Color_BGRA fg = color(0,0,0);
+    Color_BGRA outline = color(0,0,0);
+
+    int xoffsets[8] = {-1,0,1,-1,1,-1,0,1};
+    int yoffsets[8] = {-1,-1,-1,0,0,1,1,1};
+
     for (int i = 0; i < len; i++)
     {
         float x = startX + i * 24;
         float y = backBuffer->height / 2 + 32 * sin(i * M_PI_M_2 / (32.0f) - t/2);
+        for (int j = 0; j < 8; j++)
+        {
+            renderChar(backBuffer, x+xoffsets[j], y + yoffsets[j], bg, outline, 24, text[i]);
+        }
         renderChar(backBuffer, x, y, bg, fg, 24, text[i]);
     }
 }
@@ -101,7 +112,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 
     float * staticData = initializeStaticData(&screen, &memory);
     
-    const EFI_UINT16 * text = L"Hei NDC! Håper dere klapper masse for Michael på slutten! Hilsen Terje";
+    const char * text = "Hei NDC! H\x1fper dere klapper masse for Michael p\x1f slutten! Hilsen Terje";
     float t = 0;
     int interlacing = 0;
     plasma(staticData, backBuffer, t, interlacing);

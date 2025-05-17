@@ -5,7 +5,12 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include "shared/utils.h"
+
+#ifndef BASIC_TEXT
 #include "font8x8/font8x8_latin.h"
+#else
+#include "font8x8/font8x8_basic.h"
+#endif
 
 static int BASE_FONT_SIZE = 8;
 
@@ -68,6 +73,7 @@ static char *getGlyph(int ord)
         // Contains an 8x8 font map for unicode points U+0000 - U+007F (basic latin)
         return font8x8_basic[ord];
     }
+    #ifndef BASIC_TEXT
     else if (ord <= 0x9F)
     {
         // Contains an 8x8 font map for unicode points U+0080 - U+009F (C1/C2 control)
@@ -78,6 +84,7 @@ static char *getGlyph(int ord)
         // Contains an 8x8 font map for unicode points U+00A0 - U+00FF (extended latin)
         return font8x8_ext_latin[ord - 0xA0];
     }
+    #endif
     return NULL;
 }
 
