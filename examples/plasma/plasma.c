@@ -69,16 +69,9 @@ Bitmap * spriteFromChar(Bitmap * cache[128], Memory * memory, char c, int size, 
 {
     if (!cache[c]){
         Bitmap * bitmap = allocateBitmap(size + outlineSize * 2, size + outlineSize * 2, memory);
-        for(int y = 0; y < bitmap->height; y++){
-            for (int x = 0; x < bitmap->width; x++)
-            {
-                bitmap->buffer[y * bitmap->stride + x] = (Color_BGRA){.Red = 255, .Green = 255, .Blue = 0, .Reserved = 0};
-            }
-        }
-        Color_BGRA bg = color(0,0,0);
-        bg.Reserved = 255;
+        fillBitmap(bitmap, colorTransparent());
+
         Color_BGRA fg = color(0,0,0);
-        fg.Reserved = 255;
         Color_BGRA outline = color(255,255,255);
 
         float x = outlineSize;
