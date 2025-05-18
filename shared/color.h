@@ -7,7 +7,12 @@ typedef EFI_GRAPHICS_OUTPUT_BLT_PIXEL Color_BGRA;
 
 static Color_BGRA color(EFI_UINT32 r, EFI_UINT32 g, EFI_UINT32 b)
 {
-    return (Color_BGRA) {.Blue = b, .Green = g, .Red = r, .Reserved = 0};
+    return (Color_BGRA) {.Blue = b, .Green = g, .Red = r, .Reserved = 255};
+}
+
+static Color_BGRA colorTransparent()
+{
+        return (Color_BGRA) {.Blue = 0, .Green = 0, .Red = 0, .Reserved = 0};
 }
 
 static Color_BGRA i32ToColor(int i32color)

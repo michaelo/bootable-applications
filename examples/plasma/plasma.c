@@ -65,23 +65,41 @@ void plasma(float * staticData, Bitmap * backBuffer, float time, int interlacing
     }
 }
 
-void scrollingText(Bitmap * backBuffer, float t, const char * text, unsigned long long len)
+Bitmap * spriteFromChar(Bitmap * cache[128], Memory * memory, char c, int size, int outlineSize)
+{
+    if (!cache[c]){
+        Bitmap * bitmap = allocateBitmap(size + outlineSize * 2, size + outlineSize * 2, memory);
+        for(int y = 0; y < bitmap->height; y++){
+            for (int x = 0; x < bitmap->width; x++)
+            {
+                bitmap->buffer[y * bitmap->stride + x] = (Color_BGRA){.Red = 255, .Green = 255, .Blue = 0, .Reserved = 0};
+            }
+        }
+        Color_BGRA bg = color(0,0,0);
+        bg.Reserved = 255;
+        Color_BGRA fg = color(0,0,0);
+        fg.Reserved = 255;
+        Color_BGRA outline = color(255,255,255);
+
+        float x = outlineSize;
+        float y = outlineSize;
+        renderCharOutline(bitmap, x, y, fg, outline, outlineSize, size, c);
+        cache[c] = bitmap;
+    }
+    return cache[c];
+}
+
+void scrollingText(Bitmap * target, Bitmap * cache[128], Memory * memory, float t, const char * text, unsigned long long len)
 {
     float speed = 40;
-    float startX = backBuffer->width - fmod(t * speed, backBuffer->width * 4);
-    Color_BGRA bg = color(0,0,0);
-    bg.Reserved = 1;
-    Color_BGRA fg = color(0,0,0);
-    Color_BGRA outline = color(255,255,255);
-
-    int xoffsets[8] = {-1,0,1,-1,1,-1,0,1};
-    int yoffsets[8] = {-1,-1,-1,0,0,1,1,1};
+    float startX = target->width - fmod(t * speed, target->width * 4);
 
     for (int i = 0; i < len; i++)
     {
         float x = startX + i * 24;
-        float y = backBuffer->height / 2 + 32 * sin(i * M_PI_M_2 / (32.0f) - t/2);
-        renderCharOutline(backBuffer, x, y, fg, outline, 2, 24, text[i]);
+        float y = target->height / 2 + 32 * sin(i * M_PI_M_2 / (32.0f) - t/2);
+        Bitmap * bitmap = spriteFromChar(cache, memory, text[i], 24, 2);
+        drawBitmapTransparent(x, y, bitmap, target);
     }
 }
 
@@ -106,6 +124,9 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     Bitmap * backBuffer = allocateBitmap(screen.width, screen.height, &memory);
     fillBitmap(backBuffer, color(0,0,0));
 
+    Bitmap * cache[128];
+    for (int i = 0; i < 128; i++) cache[i] = 0;
+
     float * staticData = initializeStaticData(&screen, &memory);
     
     const char * text = "Hei NDC! H\x1fper dere klapper masse for Michael p\x1f slutten! Hilsen Terje";
@@ -123,7 +144,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
         status = boot_services->WaitForEvent(1, &loopEvent, &index);
         plasma(staticData, backBuffer, t, interlacing);
         drawBitmapToScreen(gfx_out, 0, 0, backBuffer);
-        scrollingText(&screen, t, text, 71);
+        scrollingText(&screen, cache, &memory, t, text, 71);
         t += 0.1f;
         interlacing = (interlacing + 1) % 2;
     }

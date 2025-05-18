@@ -58,9 +58,11 @@ static void drawBitmapTransparent(EFI_UINT32 dx, EFI_UINT32 dy, Bitmap * source,
     for (EFI_UINT32 y = 0; y < source->height; y++)
     {
         int py = y + dy;
+        if (py < 0 || py >= target->height) continue;
         for (EFI_UINT32 x = 0; x < source->width; x++)
         {
             int px = x + dx;
+            if (px < 0 || px >= target->width) continue;
             Color_BGRA pixel = source->buffer[y * source->width + x];
             if (pixel.Reserved != 0) {
                 target->buffer[py * target->stride + px] = pixel;

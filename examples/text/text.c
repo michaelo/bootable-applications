@@ -20,8 +20,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     Bitmap screen;
     initializeBitmapFromScreenBuffer(&screen, gfx);
     
-    EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg = color(0, 0, 0);
-    bg.Reserved = 1; // transparent
+    EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg = colorTransparent();
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg = color(255, 255, 255);
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL outline = color(127, 0, 127);
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL outline_fg = color(255, 255, 255);

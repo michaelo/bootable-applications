@@ -112,17 +112,16 @@ static void renderChar(Bitmap *bitmap, int dx, int dy, Color_BGRA bg, Color_BGRA
             EFI_UINT64 idx = py * bitmap->stride + px;
             bitmap->buffer[idx] = set
                                 ? fg
-                                : bg.Reserved // transparent if reserved > 0
-                                    ? bitmap->buffer[idx]
-                                    : bg;
+                                : bg.Reserved // transparent if reserved == 0
+                                    ? bg
+                                    : bitmap->buffer[idx];
         }
     }
 }
 
 static void renderCharOutline(Bitmap *bitmap, int dx, int dy, Color_BGRA fg, Color_BGRA outline, EFI_UINT16 outline_size, EFI_UINT16 size, EFI_UINT16 c)
 {
-    EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg = color(0, 0, 0);
-    bg.Reserved = 1; // transparent
+    Color_BGRA bg = colorTransparent();
 
     renderChar(bitmap, dx - outline_size, dy - outline_size, bg, outline, size, c);
     renderChar(bitmap, dx, dy - outline_size, bg, outline, size, c);
@@ -148,7 +147,7 @@ static void renderCharOptimizeTest(Bitmap *bitmap, int dx, int dy, Color_BGRA bg
     EFI_UINT64 idx;
 
     // If not transparent
-    if (!bg.Reserved)
+    if (bg.Reserved)
     {
         for (int x = 0; x < size; x++)
         {
@@ -173,7 +172,7 @@ static void renderCharOptimizeTest(Bitmap *bitmap, int dx, int dy, Color_BGRA bg
     }
 
     // If not transparent
-    if (!fg.Reserved)
+    if (fg.Reserved)
     {
         for (int x = 0; x < size; x++)
         {
@@ -214,8 +213,7 @@ static EFI_UINT64 renderString(Bitmap *bitmap, int dx, int dy, Color_BGRA bg, Co
 
 static EFI_UINT64 renderStringOutline(Bitmap *bitmap, int dx, int dy, Color_BGRA fg, Color_BGRA outline, EFI_UINT16 outline_size, EFI_UINT16 size, EFI_UINT16 *text)
 {
-    EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg = color(0, 0, 0);
-    bg.Reserved = 1; // transparent
+    Color_BGRA bg = colorTransparent();
 
     renderString(bitmap, dx - outline_size, dy - outline_size, bg, outline, size, text);
     renderString(bitmap, dx, dy - outline_size, bg, outline, size, text);

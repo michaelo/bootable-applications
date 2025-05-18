@@ -25,8 +25,7 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
     EFI_UINTN len = 0;
 
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg = color(255, 255, 255);
-    EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg = color(0, 0, 0);
-    bg.Reserved = 1; // transparent
+    EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg = colorTransparent();
 
     int alive = 1;
     Bitmap screen;
