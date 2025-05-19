@@ -85,13 +85,15 @@ Bitmap * spriteFromChar(Bitmap * cache[128], Memory * memory, char c, int size, 
 void scrollingText(Bitmap * target, Bitmap * cache[128], Memory * memory, float t, const char * text, unsigned long long len)
 {
     float speed = 40;
-    float startX = target->width - fmod(t * speed, target->width * 4);
+    int size = 16;
+    int outline = 1;
+    float startX = target->width - fmod(t * speed, len * (size + outline) + target->width * 2);
 
     for (int i = 0; i < len; i++)
     {
-        float x = startX + i * 24;
+        float x = startX + i * (size + outline);
         float y = target->height / 2 + 32 * sin(i * M_PI_M_2 / (32.0f) - t/2);
-        Bitmap * bitmap = spriteFromChar(cache, memory, text[i], 24, 2);
+        Bitmap * bitmap = spriteFromChar(cache, memory, text[i], size, outline);
         drawBitmapTransparent(x, y, bitmap, target);
     }
 }
@@ -118,29 +120,31 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     initializeBitmapFromScreenBuffer(&screen, gfx_out);    
     Bitmap * plasmaBuffer = allocateBitmap(320, 240, &memory);
     Bitmap * backBuffer = allocateBitmap(screen.width, screen.height, &memory);
-    fillBitmap(plasmaBuffer, color(0,0,0));
 
     Bitmap * cache[128];
     for (int i = 0; i < 128; i++) cache[i] = 0;
 
     float * staticData = initializeStaticData(plasmaBuffer, &memory);
     
-    const char * text = "Hei NDC! H\x1fper dere klapper masse for Michael p\x1f slutten! Hilsen Terje";
+    const char * text = "Hei NDC! H\x1fper dere klapper masse for Michael p\x1f slutten! Hilsen Terje"
+    "          Oida, her var det fortsatt mer plass og vi har enn\x1f ikke kommet til 4k!"
+    "          I gamle demoer pleide det visst \x1f v\x1dre masse shoutouts til venner fra demoscenen, men jeg kjenner ingen i demoscenen, s\x1f det blir i s\x1f fall en veldig kort sekvens..."
+    "          Jeg kan jo kanskje hilse til kona?";
     float t = 0;
-    plasma(staticData, plasmaBuffer, t);
-    drawBitmapToScreen(gfx_out, 0, 0, backBuffer);
 
+    float speed = 0.07f;
+    int fps = 60;
     EFI_UINTN index;
     EFI_EVENT loopEvent;
     boot_services->CreateEvent(EFI_EVT_TIMER, EFI_TPL_CALLBACK, NULL, (void *)NULL, &loopEvent);
-    boot_services->SetTimer(loopEvent, EFI_TIMER_DELAY_Periodic, 166000);
+    boot_services->SetTimer(loopEvent, EFI_TIMER_DELAY_Periodic, 10000000 / fps);
     for (;;)
     {
         status = boot_services->WaitForEvent(1, &loopEvent, &index);
 
         // Render plasma and text to low-res bitmap
         plasma(staticData, plasmaBuffer, t);
-        scrollingText(plasmaBuffer, cache, &memory, t, text, 71);
+        scrollingText(plasmaBuffer, cache, &memory, t, text, 372);
 
         // Scale lowres bitmap to screen-sized backbuffer
         bltBitmapScaled(backBuffer, plasmaBuffer, 0, 0, backBuffer->width, backBuffer->height);
@@ -148,7 +152,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
         // Copy from backbuffer to screen
         drawBitmapToScreen(gfx_out, 0, 0, backBuffer);
 
-        t += 0.1f;
+        t += speed;
     }
 
     return 0;
