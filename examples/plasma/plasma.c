@@ -34,7 +34,7 @@ float * initializeStaticData(Bitmap * screen, Memory * memory)
     return data;
 }
 
-void plasma(float * staticData, Bitmap * backBuffer, float time, int interlacing)
+void plasma(float * staticData, Bitmap * backBuffer, float time)
 {
     int w = backBuffer->width;
     int h = backBuffer->height;
@@ -46,7 +46,7 @@ void plasma(float * staticData, Bitmap * backBuffer, float time, int interlacing
 
     float scaleFactor = (w / 20);
 
-    for (int y = interlacing; y < h; y += 2)
+    for (int y = 0; y < h; y += 1)
     {
         for (int x = 0; x < w; x += 1)
         {
@@ -104,6 +104,8 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     EFI_BOOT_SERVICES *boot_services = system_table->BootServices;
     EFI_STATUS status;
 
+    system_table->BootServices->SetWatchdogTimer(0, 0, 0, NULL);
+
     Memory memory = initializeMemory(boot_services);
 
     EFI_GUID gfx_out_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
@@ -114,18 +116,18 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 
     Bitmap screen;
     initializeBitmapFromScreenBuffer(&screen, gfx_out);    
+    Bitmap * plasmaBuffer = allocateBitmap(320, 240, &memory);
     Bitmap * backBuffer = allocateBitmap(screen.width, screen.height, &memory);
-    fillBitmap(backBuffer, color(0,0,0));
+    fillBitmap(plasmaBuffer, color(0,0,0));
 
     Bitmap * cache[128];
     for (int i = 0; i < 128; i++) cache[i] = 0;
 
-    float * staticData = initializeStaticData(&screen, &memory);
+    float * staticData = initializeStaticData(plasmaBuffer, &memory);
     
     const char * text = "Hei NDC! H\x1fper dere klapper masse for Michael p\x1f slutten! Hilsen Terje";
     float t = 0;
-    int interlacing = 0;
-    plasma(staticData, backBuffer, t, interlacing);
+    plasma(staticData, plasmaBuffer, t);
     drawBitmapToScreen(gfx_out, 0, 0, backBuffer);
 
     EFI_UINTN index;
@@ -135,11 +137,18 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     for (;;)
     {
         status = boot_services->WaitForEvent(1, &loopEvent, &index);
-        plasma(staticData, backBuffer, t, interlacing);
+
+        // Render plasma and text to low-res bitmap
+        plasma(staticData, plasmaBuffer, t);
+        scrollingText(plasmaBuffer, cache, &memory, t, text, 71);
+
+        // Scale lowres bitmap to screen-sized backbuffer
+        bltBitmapScaled(backBuffer, plasmaBuffer, 0, 0, backBuffer->width, backBuffer->height);
+
+        // Copy from backbuffer to screen
         drawBitmapToScreen(gfx_out, 0, 0, backBuffer);
-        scrollingText(&screen, cache, &memory, t, text, 71);
+
         t += 0.1f;
-        interlacing = (interlacing + 1) % 2;
     }
 
     return 0;

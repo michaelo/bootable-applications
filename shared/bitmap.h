@@ -97,4 +97,23 @@ static void drawLineToBitmap(int x0, int y0, int x1, int y1, Bitmap * target, Co
     }
 }
 
+static void bltBitmapScaled(Bitmap *target, Bitmap *source, EFI_UINTN x_start, EFI_UINTN y_start, EFI_UINTN x_end, EFI_UINTN y_end)
+{
+    float x_scale = ((float)(x_end - x_start)) / source->width;
+    float y_scale = ((float)(y_end - y_start)) / source->height;
+
+    for (int ty = y_start; ty < y_end; ty += 1)
+    {
+        for (int tx = x_start; tx < x_end; tx += 1)
+        {
+            int sx = (tx - x_start) / x_scale;
+            int sy = (ty - y_start) / y_scale;
+            size_t sidx = (sy * source->stride) + sx;
+            size_t tidx = (ty * target->stride) + tx;
+
+            *(EFI_INT32 *)&target->buffer[tidx] = *(EFI_INT32 *)&(source->buffer[sidx]);
+        }
+    }
+}
+
 #endif
