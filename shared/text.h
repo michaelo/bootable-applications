@@ -14,11 +14,12 @@
 
 static int BASE_FONT_SIZE = 8;
 
-static EFI_UINTN IntLen(EFI_UINTN value, EFI_UINTN base)
+static EFI_UINTN IntLen(EFI_INTN value, EFI_UINTN base)
 {
     if (value == 0)
         return 1;
     EFI_UINTN len = 0;
+
     while (value > 0)
     {
         value = value / base;
@@ -31,7 +32,7 @@ static EFI_UINTN IntLen(EFI_UINTN value, EFI_UINTN base)
 // capacity: size, excluding e.g. terminating null - must be handled outside.
 // base: <=16
 // returns number of digits formatted
-static EFI_UINTN FormatInt(EFI_UINT16 *buffer, EFI_UINTN capacity, EFI_UINTN value, EFI_UINTN base)
+static EFI_UINTN FormatInt(EFI_UINT16 *buffer, EFI_UINTN capacity, EFI_INTN value, EFI_UINTN base)
 {
     if (base > 16)
     {
@@ -39,24 +40,36 @@ static EFI_UINTN FormatInt(EFI_UINT16 *buffer, EFI_UINTN capacity, EFI_UINTN val
     }
 
     static EFI_INT16 charmap[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-    EFI_UINTN digits = IntLen(value, base);
+
+    size_t bidx = 0;
+    EFI_INTN value_abs = value;
+    if (value_abs < 0)
+    {
+        value_abs *= -1;
+        buffer[bidx] = '-';
+        bidx += 1;
+    }
+
+    EFI_UINTN digits = IntLen(value_abs, base);
 
     // trunc
-    if (digits > capacity)
-        digits = capacity;
+    if (digits + bidx > capacity)
+    {
+        digits = capacity - bidx;
+    }
 
     for (int i = digits - 1; i >= 0; i--)
     {
-        EFI_UINTN digit = value % base;
-        buffer[i] = charmap[digit];
-        value = value / base;
+        EFI_UINTN digit = value_abs % base;
+        buffer[bidx + i] = charmap[digit];
+        value_abs = value_abs / base;
     }
 
-    return digits;
+    return digits + bidx;
 }
 
 // capactiy: size, including terminating null.
-static EFI_UINTN FormatIntZ(EFI_UINT16 *buffer, EFI_UINTN capacity, EFI_UINTN value, EFI_UINTN base)
+static EFI_UINTN FormatIntZ(EFI_UINT16 *buffer, EFI_UINTN capacity, EFI_INTN value, EFI_UINTN base)
 {
     int len = FormatInt(buffer, capacity - 1, value, base);
     buffer[len] = 0;
@@ -73,7 +86,7 @@ static char *getGlyph(int ord)
         // Contains an 8x8 font map for unicode points U+0000 - U+007F (basic latin)
         return font8x8_basic[ord];
     }
-    #ifndef BASIC_TEXT
+#ifndef BASIC_TEXT
     else if (ord <= 0x9F)
     {
         // Contains an 8x8 font map for unicode points U+0080 - U+009F (C1/C2 control)
@@ -84,7 +97,7 @@ static char *getGlyph(int ord)
         // Contains an 8x8 font map for unicode points U+00A0 - U+00FF (extended latin)
         return font8x8_ext_latin[ord - 0xA0];
     }
-    #endif
+#endif
     return NULL;
 }
 
@@ -111,10 +124,10 @@ static void renderChar(Bitmap *bitmap, int dx, int dy, Color_BGRA bg, Color_BGRA
             int set = glyph[(int)(y * scale)] & 1 << (int)(x * scale);
             EFI_UINT64 idx = py * bitmap->stride + px;
             bitmap->buffer[idx] = set
-                                ? fg
-                                : bg.Reserved // transparent if reserved == 0
-                                    ? bg
-                                    : bitmap->buffer[idx];
+                                      ? fg
+                                  : bg.Reserved // transparent if reserved == 0
+                                      ? bg
+                                      : bitmap->buffer[idx];
         }
     }
 }
