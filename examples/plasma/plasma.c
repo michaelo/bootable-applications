@@ -10,6 +10,11 @@
 
 #define dist(a, b, c, d) sqrt((float)((a - c) * (a - c) + (b - d) * (b - d)))
 
+static float waveFunc(int x, int y, float px, float py, float scaleFactor)
+{
+    return sin(dist(x, y, px,  py) / scaleFactor);
+}
+
 float * initializeStaticData(Bitmap * screen, Memory * memory)
 {
     float * data = memory->malloc(memory, screen->width * screen->height * sizeof(float));
@@ -26,9 +31,8 @@ float * initializeStaticData(Bitmap * screen, Memory * memory)
         for (int x = 0; x < screen->width; x += 1)
         {
             data[y * screen->width + x] = 
-                sin(dist(x, y, p1x,  p1y) / scaleFactor) + // constant for each x,y. Distance from the static point p1
-                sin(dist(x, y, p2x,  p2y) / scaleFactor) + // constant for each x,y. Distance from the static point p2
-                0;
+                waveFunc(x, y, p1x,  p1y, scaleFactor) + // constant for each x,y. Distance from the static point p1
+                waveFunc(x, y, p2x,  p2y, scaleFactor);  // constant for each x,y. Distance from the static point p2
         }
     }
     return data;
@@ -53,8 +57,8 @@ void plasma(float * staticData, Bitmap * backBuffer, float time)
             int pos = y * backBuffer->width + x;  
             float value = 
                 staticData[pos]  
-                + sin(dist(x, y, p3x, yPos) / scaleFactor) //Distance from point p3, which is moving vertically
-                + sin(dist(x, y, xPos, p4y) / scaleFactor); //Distance from point p4, which is moving horizontally
+                + waveFunc(x, y, p3x, yPos, scaleFactor) //Distance from point p3, which is moving vertically
+                + waveFunc(x, y, xPos, p4y, scaleFactor); //Distance from point p4, which is moving horizontally
 
             //value is the sum of 4 sine waves, which leaves it in the range [-4, 4]
 
@@ -84,15 +88,15 @@ Bitmap * spriteFromChar(Bitmap * cache[128], Memory * memory, char c, int size, 
 
 void scrollingText(Bitmap * target, Bitmap * cache[128], Memory * memory, float t, const char * text, unsigned long long len)
 {
-    float speed = 40;
-    int size = 16;
-    int outline = 1;
+    float speed = target->width / 20;
+    int size = target->height / 20;
+    int outline = size / 10;
     float startX = target->width - fmod(t * speed, len * (size + outline) + target->width * 2);
 
     for (int i = 0; i < len; i++)
     {
-        float x = startX + i * (size + outline);
-        float y = target->height / 2 + 32 * sin(i * M_PI_M_2 / (32.0f) - t/2);
+        float x = startX + i * size;
+        float y = target->height / 2 + size * 2 * sin(i * M_PI_M_2 / (32.0f) - t/2);
         Bitmap * bitmap = spriteFromChar(cache, memory, text[i], size, outline);
         drawBitmapTransparent(x, y, bitmap, target);
     }
@@ -118,7 +122,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 
     Bitmap screen;
     initializeBitmapFromScreenBuffer(&screen, gfx_out);    
-    Bitmap * plasmaBuffer = allocateBitmap(320, 240, &memory);
+    Bitmap * plasmaBuffer = allocateBitmap(240, 180, &memory);
     Bitmap * backBuffer = allocateBitmap(screen.width, screen.height, &memory);
 
     Bitmap * cache[128];
@@ -126,10 +130,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 
     float * staticData = initializeStaticData(plasmaBuffer, &memory);
     
-    const char * text = "Hei NDC! H\x1fper dere klapper masse for Michael p\x1f slutten! Hilsen Terje"
-    "          Oida, her var det fortsatt mer plass og vi har enn\x1f ikke kommet til 4k!"
-    "          I gamle demoer pleide det visst \x1f v\x1dre masse shoutouts til venner fra demoscenen, men jeg kjenner ingen i demoscenen, s\x1f det blir i s\x1f fall en veldig kort sekvens..."
-    "          Jeg kan jo kanskje hilse til kona?";
+    const char * text = "Hei NDC!   Takk for at dere valgte denne presentasjonen.   H\x1fper dere klapper masse for Michael p\x1f slutten!   Hilsen Terje";
     float t = 0;
 
     float speed = 0.07f;
@@ -144,10 +145,10 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 
         // Render plasma and text to low-res bitmap
         plasma(staticData, plasmaBuffer, t);
-        scrollingText(plasmaBuffer, cache, &memory, t, text, 372);
-
+        
         // Scale lowres bitmap to screen-sized backbuffer
         bltBitmapScaled(backBuffer, plasmaBuffer, 0, 0, backBuffer->width, backBuffer->height);
+        scrollingText(backBuffer, cache, &memory, t, text, 123);
 
         // Copy from backbuffer to screen
         drawBitmapToScreen(gfx_out, 0, 0, backBuffer);
