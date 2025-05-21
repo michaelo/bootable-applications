@@ -38,7 +38,7 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
         EFI_UINTN line_height = font_size * 1.5;
 
         initializeBitmapFromScreenBuffer(&screen, gfx);
-        
+        fillScreen(gfx, color(0,0,0));
         drawRectangleToScreen(gfx, 0, 0, 640, 480, color(128,0,128));
 
         // Write current resolution + help commands

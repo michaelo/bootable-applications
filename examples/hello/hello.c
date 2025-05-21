@@ -1,5 +1,6 @@
+// Minimal example showcasing starting a basic UEFI application, printing text to console output, and waiting "Enter" to exit.
 #include "lil_uefi/lil_uefi.h"
-#include <stddef.h>
+#include <stddef.h> // for NULL
 
 // Entry point:
 // https://uefi.org/specs/UEFI/2.10/04_EFI_System_Table.html#efi-image-entry-point
@@ -22,7 +23,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     // https://uefi.org/specs/UEFI/2.10/12_Protocols_Console_Support.html?highlight=OutputString#efi-simple-text-output-protocol
     out->OutputString(out, L"Hello,");
     out->SetCursorPosition(out, 0, 1);
-    out->OutputString(out, L"   NDC!");
+    out->OutputString(out, L"   you!");
 
     for (;;)
     {
