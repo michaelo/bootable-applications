@@ -34,7 +34,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
         fillScreen(gfx, color(96,0,0));
         drawRectangleToScreen(gfx, 10, 10, 95, 95, color(128, 0, 0));
         drawRectangleToScreen(gfx, 150, 70, 95, 120, color(128, 128, 0));
-        drawLineToBitmap(0,0,120,120,&screen, color(255,255,0));
+        drawLine(0,0,120,120,&screen, color(255,255,0));
 
         renderStringOutline(&screen, 100, 100, outline_fg, outline, 2, font_size, L"Woop woop - this is all good! ha æøå da");
         renderString(&screen, 100, 200, bg, fg, font_size, L"Press Left/right to change font size. Enter to shutdown.");

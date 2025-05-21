@@ -48,4 +48,26 @@ static Memory initializeMemory(EFI_BOOT_SERVICES *boot_services_ptr)
     return memory;
 }
 
+//Unoptimized memcpy that needs no boot_services pointer
+static void * memcpy(void * dst, void * src, unsigned long long len)
+{
+    char * dst_char = (char*)dst;
+    char * src_char = (char*)src;
+    for (int i = 0; i < len; i++){
+        dst_char[i] = src_char[i];
+    }
+    return dst;
+}
+
+//Unoptimized memset that needs no boot_services pointer
+static void * memset(void * dst, int value, unsigned long long len)
+{
+    unsigned char * dst_char = (unsigned char*)dst;
+    unsigned char cvalue = (unsigned char)value;
+    for (int i = 0; i < len; i++){
+        dst_char[i] = value;
+    }
+    return dst;
+}
+
 #endif
