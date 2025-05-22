@@ -25,7 +25,7 @@ mkdir -p build/$BASENAMENOEXT/EFI/BOOT/
 # Generate COFF object file
 log Compile COFF object file: build/$BASENAMENOEXT.o
 # FLAGS=-Os -flto
-clang $ENTRY_FILE -I. -c -target x86_64-pc-win32-coff -fno-builtin-memset -Werror -o build/$BASENAMENOEXT.o 
+clang $ENTRY_FILE -I. -c -target x86_64-pc-win32-coff -fno-builtin-memset -mno-stack-arg-probe -Werror -o build/$BASENAMENOEXT.o 
 
 # Generate PE32+ executable
 log Link object file to PE32+ executable: build/$BASENAMENOEXT/EFI/BOOT/BOOTX64.EFI

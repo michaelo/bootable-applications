@@ -71,7 +71,7 @@ static void drawBitmapTransparent(EFI_UINT32 dx, EFI_UINT32 dy, Bitmap * source,
     }
 }
 
-static void drawLineToBitmap(int x0, int y0, int x1, int y1, Bitmap * target, Color_BGRA color)
+static void drawLine(int x0, int y0, int x1, int y1, Bitmap * target, Color_BGRA color)
 {
     int dx = x1 - x0;
     int dy = y1 - y0;
@@ -88,12 +88,42 @@ static void drawLineToBitmap(int x0, int y0, int x1, int y1, Bitmap * target, Co
     {
         int x = round(xf);
         int y = round(yf);
-        EFI_UINT32 index = y * target->stride + x;
-        if (index >= 0 && index < y * target->stride * target->height){
+        if (x >= 0 && x < target->width && y >= 0 && y < target->height){
             target->buffer[y * target->stride + x] = color;
         }
         xf += xIncrement;
         yf += yIncrement;
+    }
+}
+
+static void drawShadedLine(int x0, int y0, int z0, int x1, int y1, int z1, Bitmap * target, EFI_GRAPHICS_OUTPUT_BLT_PIXEL (*colorfunc)(float[3]))
+{
+    int dx = x1 - x0;
+    int dy = y1 - y0;
+    int dz = z1 - z0;
+    EFI_UINT32 xSteps = abs(dx);
+    EFI_UINT32 ySteps = abs(dy);
+    EFI_UINT32 numSteps = MAX(xSteps, ySteps);
+    float numStepsF = (float) numSteps;
+    float xIncrement = dx / numStepsF;
+    float yIncrement = dy / numStepsF;
+    float zIncrement = dz / numStepsF;
+
+    float xf = x0;
+    float yf = y0;
+    float zf = z0;
+    for (EFI_UINT32 step = 0; step <= numSteps; ++step)
+    {
+        float pos[3] = {xf,yf,zf};
+        int x = round(xf);
+        int y = round(yf);
+
+        if (x >= 0 && x < target->width && y >= 0 && y < target->height){
+            target->buffer[y * target->stride + x] = colorfunc(pos);
+        }
+        xf += xIncrement;
+        yf += yIncrement;
+        zf += zIncrement;
     }
 }
 

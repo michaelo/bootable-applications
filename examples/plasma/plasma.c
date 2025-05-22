@@ -130,7 +130,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 
     float * staticData = initializeStaticData(plasmaBuffer, &memory);
     
-    const char * text = "Hei NDC!   Takk for at dere valgte denne presentasjonen.   H\x1fper dere klapper masse for Michael p\x1f slutten!   Hilsen Terje";
+    const char * text = "Hello World! ehm, I mean NDC! Please remember to give a warm applause for Michael at the end! -Terje";
     float t = 0;
 
     float speed = 0.07f;
@@ -148,7 +148,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
         
         // Scale lowres bitmap to screen-sized backbuffer
         bltBitmapScaled(backBuffer, plasmaBuffer, 0, 0, backBuffer->width, backBuffer->height);
-        scrollingText(backBuffer, cache, &memory, t, text, 123);
+        scrollingText(backBuffer, cache, &memory, t, text, 101);
 
         // Copy from backbuffer to screen
         drawBitmapToScreen(gfx_out, 0, 0, backBuffer);
