@@ -16,21 +16,13 @@ log "File: $ENTRY_FILE"
 # Build & prepare EFI folder structure for qemu
 mkdir -p build/$BASENAMENOEXT/EFI/BOOT/
 
-# clang $ENTRY_FILE -I. -c -target x86_64-pc-win32-coff -Wno-visibility -ffreestanding -fno-builtin -fno-stack-protector -fshort-wchar -mno-red-zone -o build/$BASENAMENOEXT.o
-# lld-link -entry:EfiMain -align:16 -driver -nodefaultlib -dll -subsystem:efi_application -out:build/$BASENAMENOEXT/EFI/BOOT/BOOTX64.EFI build/$BASENAMENOEXT.o
-
-# Generate preprocessed file (not necessary - just for insight into what gets compiled)
-# clang $ENTRY_FILE -E -I. -o build/$BASENAMENOEXT.o.e
-
 # Generate COFF object file
 log Compile COFF object file: build/$BASENAMENOEXT.o
-# FLAGS=-Os -flto
 clang $ENTRY_FILE -I. -c -target x86_64-pc-win32-coff -fno-builtin-memset -mno-stack-arg-probe -Werror -o build/$BASENAMENOEXT.o 
 
 # Generate PE32+ executable
 log Link object file to PE32+ executable: build/$BASENAMENOEXT/EFI/BOOT/BOOTX64.EFI
 lld-link -entry:EfiMain -subsystem:efi_application -out:build/$BASENAMENOEXT/EFI/BOOT/BOOTX64.EFI build/$BASENAMENOEXT.o 
-# upx -9 build/$BASENAMENOEXT/EFI/BOOT/BOOTX64.EFI
 
 # Make image file to flash - move to separate file?
 FLASHFILE=build/$BASENAMENOEXT.img
