@@ -25,10 +25,11 @@ void teapot(Bitmap * backBuffer, Lineset * teapot_data, float zdeg)
 {
     float modelView[4][4];
     make_identity(modelView);
-    scale(modelView, 300, 300, 300);//scale it up so it more or less fills the viewport space
+    float scaleFactor = backBuffer->width / 2;
+    scale(modelView, scaleFactor, scaleFactor, scaleFactor);//scale it up so it more or less fills the viewport space
     rotateY(modelView, degToRad(zdeg));//rotate around the scene y axis
     rotateX(modelView, degToRad(-135));//rotate along the scene x axis
-    translate(modelView, 320, 290, 0);//move the object to be approx centered on the viewport
+    translate(modelView, backBuffer->width / 2, backBuffer->height * 0.6, 0);//move the object to be approx centered on the viewport
     
     //clear backbuffer:
     fillBitmap(backBuffer, color(0,0,0));
