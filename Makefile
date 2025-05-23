@@ -43,6 +43,7 @@ endif
 
 run: build/$(DIR)/EFI/BOOT/BOOTX64.EFI
 	qemu-system-x86_64 \
+		-display cocoa,zoom-to-fit=on \
 		-s -serial stdio \
 		-bios ./bios/OVMFx64.fd \
 		-drive format=raw,file=fat:rw:build/$(DIR)
