@@ -15,7 +15,7 @@ if [ ! -f "$IMGPATH" ]; then
 fi
 
 diskutil unmountDisk $DEVICE || true
-sudo dd if=$$IMGPATH of=$DEVICE bs=1m 
+sudo dd if=$IMGPATH of=$DEVICE bs=1m 
 diskutil eject $DEVICE
 
 log Finished.
