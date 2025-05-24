@@ -33,6 +33,13 @@ static Bitmap * initializeBitmapFromBuffer(Bitmap * bitmap, EFI_UINT32 width, EF
     return bitmap;
 }
 
+static Bitmap * allocateBitmapForBuffer(Memory * memory, EFI_UINT32 width, EFI_UINT32 height, EFI_UINT32 stride, const unsigned int * buffer)
+{
+    Bitmap * bitmap = (Bitmap*) memory->malloc(memory, sizeof(Bitmap));
+    initializeBitmapFromBuffer(bitmap, width, height, stride, buffer);
+    return bitmap;
+}
+
 static Bitmap * initializeBitmapFromScreenBuffer(Bitmap * bitmap, EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx_out)
 {
     return initializeBitmapFromBuffer(
