@@ -15,9 +15,9 @@ static float waveFunc(int x, int y, float px, float py, float scaleFactor)
     return sin(dist(x, y, px,  py) / scaleFactor);
 }
 
-float * initializeStaticData(Bitmap * screen, Memory * memory)
+float * initializeStaticData(Bitmap * screen)
 {
-    float * data = memory->malloc(memory, screen->width * screen->height * sizeof(float));
+    float * data = malloc(screen->width * screen->height * sizeof(float));
 
     //Position of the static points
     float p1x = screen->width * 0.25;
@@ -69,10 +69,10 @@ void plasma(float * staticData, Bitmap * backBuffer, float time)
     }
 }
 
-Bitmap * spriteFromChar(Bitmap * cache[128], Memory * memory, char c, int size, int outlineSize)
+Bitmap * spriteFromChar(Bitmap * cache[128], char c, int size, int outlineSize)
 {
     if (!cache[c]){
-        Bitmap * bitmap = allocateBitmap(size + outlineSize * 2, size + outlineSize * 2, memory);
+        Bitmap * bitmap = allocateBitmap(size + outlineSize * 2, size + outlineSize * 2);
         fillBitmap(bitmap, colorTransparent());
 
         Color_BGRA fg = color(0,0,0);
@@ -86,7 +86,7 @@ Bitmap * spriteFromChar(Bitmap * cache[128], Memory * memory, char c, int size, 
     return cache[c];
 }
 
-void scrollingText(Bitmap * target, Bitmap * cache[128], Memory * memory, float t, const char * text, unsigned long long len)
+void scrollingText(Bitmap * target, Bitmap * cache[128], float t, const char * text, unsigned long long len)
 {
     float speed = target->width / 20;
     int size = target->height / 20;
@@ -97,7 +97,7 @@ void scrollingText(Bitmap * target, Bitmap * cache[128], Memory * memory, float 
     {
         float x = startX + i * size;
         float y = target->height / 2 + size * 2 * sin(i * M_PI_M_2 / (32.0f) - t/2);
-        Bitmap * bitmap = spriteFromChar(cache, memory, text[i], size, outline);
+        Bitmap * bitmap = spriteFromChar(cache, text[i], size, outline);
         drawBitmapTransparent(x, y, bitmap, target);
     }
 }
@@ -105,14 +105,13 @@ void scrollingText(Bitmap * target, Bitmap * cache[128], Memory * memory, float 
 // entry point
 EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 {
+    efi_initialize_global_state(system_table);
     useFloatingPointMath();
 
     EFI_BOOT_SERVICES *boot_services = system_table->BootServices;
     EFI_STATUS status;
 
     system_table->BootServices->SetWatchdogTimer(0, 0, 0, NULL);
-
-    Memory memory = initializeMemory(boot_services);
 
     EFI_GUID gfx_out_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
     EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx_out;
@@ -122,13 +121,13 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 
     Bitmap screen;
     initializeBitmapFromScreenBuffer(&screen, gfx_out);    
-    Bitmap * plasmaBuffer = allocateBitmap(240, 180, &memory);
-    Bitmap * backBuffer = allocateBitmap(screen.width, screen.height, &memory);
+    Bitmap * plasmaBuffer = allocateBitmap(240, 180);
+    Bitmap * backBuffer = allocateBitmap(screen.width, screen.height);
 
     Bitmap * cache[128];
     for (int i = 0; i < 128; i++) cache[i] = 0;
 
-    float * staticData = initializeStaticData(plasmaBuffer, &memory);
+    float * staticData = initializeStaticData(plasmaBuffer);
     
     const char * text = "Hello World! ehm, I mean NDC! Please remember to give a warm applause for Michael at the end! -Terje";
     float t = 0;
@@ -148,7 +147,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
         
         // Scale lowres bitmap to screen-sized backbuffer
         bltBitmapScaled(backBuffer, plasmaBuffer, 0, 0, backBuffer->width, backBuffer->height);
-        scrollingText(backBuffer, cache, &memory, t, text, 101);
+        scrollingText(backBuffer, cache, t, text, 101);
 
         // Copy from backbuffer to screen
         drawBitmapToScreen(gfx_out, 0, 0, backBuffer);

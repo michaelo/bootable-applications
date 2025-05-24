@@ -12,9 +12,9 @@ typedef struct Bitmap {
     Color_BGRA * buffer;
 } Bitmap;
 
-static Bitmap * allocateBitmap(EFI_UINT32 width, EFI_UINT32 height, Memory * memory)
+static Bitmap * allocateBitmap(EFI_UINT32 width, EFI_UINT32 height)
 {
-    Bitmap * bitmap = (Bitmap*) memory->malloc(memory, sizeof(Bitmap) + sizeof(Color_BGRA) * width * height);
+    Bitmap * bitmap = (Bitmap*) malloc(sizeof(Bitmap) + sizeof(Color_BGRA) * width * height);
     bitmap->width = width;
     bitmap->height = height;
     bitmap->stride = width;
@@ -33,9 +33,9 @@ static Bitmap * initializeBitmapFromBuffer(Bitmap * bitmap, EFI_UINT32 width, EF
     return bitmap;
 }
 
-static Bitmap * allocateBitmapForBuffer(Memory * memory, EFI_UINT32 width, EFI_UINT32 height, EFI_UINT32 stride, const unsigned int * buffer)
+static Bitmap * allocateBitmapForBuffer(EFI_UINT32 width, EFI_UINT32 height, EFI_UINT32 stride, const unsigned int * buffer)
 {
-    Bitmap * bitmap = (Bitmap*) memory->malloc(memory, sizeof(Bitmap));
+    Bitmap * bitmap = (Bitmap*) malloc(sizeof(Bitmap));
     initializeBitmapFromBuffer(bitmap, width, height, stride, buffer);
     return bitmap;
 }
@@ -145,8 +145,8 @@ static void bltBitmapScaled(Bitmap *target, Bitmap *source, EFI_UINTN x_start, E
         {
             int sx = (tx - x_start) / x_scale;
             int sy = (ty - y_start) / y_scale;
-            size_t sidx = (sy * source->stride) + sx;
-            size_t tidx = (ty * target->stride) + tx;
+            unsigned int sidx = (sy * source->stride) + sx;
+            unsigned int tidx = (ty * target->stride) + tx;
 
             *(EFI_INT32 *)&target->buffer[tidx] = *(EFI_INT32 *)&(source->buffer[sidx]);
         }
@@ -164,8 +164,8 @@ static void bltBitmapScaledXor(Bitmap *target, Bitmap *source, EFI_UINTN x_start
         {
             int sx = (tx - x_start) / x_scale;
             int sy = (ty - y_start) / y_scale;
-            size_t sidx = (sy * source->stride) + sx;
-            size_t tidx = (ty * target->stride) + tx;
+            unsigned int sidx = (sy * source->stride) + sx;
+            unsigned int tidx = (ty * target->stride) + tx;
 
             *(EFI_INT32 *)&target->buffer[tidx] ^= *(EFI_INT32 *)&(source->buffer[sidx]);
         }

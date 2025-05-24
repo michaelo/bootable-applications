@@ -15,11 +15,11 @@ typedef struct Lineset_s
     int * lines;
 } Lineset;
 
-Lineset * allocateLineset(Memory * memory, int numVertices, int numLines, int lineLength, int loop)
+Lineset * allocateLineset(int numVertices, int numLines, int lineLength, int loop)
 {
     int verticesSize = numVertices * 3 * sizeof(float);
     int linesSize = numLines * lineLength * sizeof(int);
-    Lineset * lineset = (Lineset*)memory->malloc(memory, sizeof(Lineset) + verticesSize + linesSize);
+    Lineset * lineset = (Lineset*)malloc(sizeof(Lineset) + verticesSize + linesSize);
     lineset->numVertices = numVertices;
     lineset->numLines = numLines;
     lineset->lineLength = lineLength;
@@ -29,9 +29,9 @@ Lineset * allocateLineset(Memory * memory, int numVertices, int numLines, int li
     return lineset;
 }
 
-Lineset * createCuboid(Memory * memory, float min[3], float max[3])
+Lineset * createCuboid(float min[3], float max[3])
 {
-    Lineset * lineset = allocateLineset(memory, 8, 6, 4, 1);
+    Lineset * lineset = allocateLineset(8, 6, 4, 1);
     float vertices[8][3] = {
         {min[0],min[1],min[2]},
         {max[0],min[1],min[2]},
@@ -42,7 +42,7 @@ Lineset * createCuboid(Memory * memory, float min[3], float max[3])
         {max[0],max[1],max[2]},
         {min[0],max[1],max[2]},
     };
-    memory->memcpy(memory, lineset->vertices, vertices, 8 * 3 * sizeof(float));
+    memcpy(lineset->vertices, vertices, 8 * 3 * sizeof(float));
 
     int lines[6][4] = {
         {0,1,2,3},
@@ -52,7 +52,7 @@ Lineset * createCuboid(Memory * memory, float min[3], float max[3])
         {0,4,7,3},
         {1,2,6,5},
     };
-    memory->memcpy(memory, lineset->lines, lines, 6 * 4 * sizeof(int));
+    memcpy(lineset->lines, lines, 6 * 4 * sizeof(int));
     return lineset;
 }
 

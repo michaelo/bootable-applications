@@ -48,7 +48,7 @@ Color_BGRA red(float point[3])
     return color(255,0,0);
 }
 
-void drawMap(Memory * memory, Map * map, Bitmap * backBuffer, Bitmap ** sprites, int selected[3])
+void drawMap(Map * map, Bitmap * backBuffer, Bitmap ** sprites, int selected[3])
 {
     fillBitmap(backBuffer, color(0,0,0));
 
@@ -94,22 +94,22 @@ void drawMap(Memory * memory, Map * map, Bitmap * backBuffer, Bitmap ** sprites,
 
     float min[3] = {0,0,bottomZ};
     float max[3] = {map->width,map->height,topZ};    
-    Lineset * extents = createCuboid(memory, min, max);
+    Lineset * extents = createCuboid(min, max);
     renderLineset(extents, mat, backBuffer, depthgreen);
 
     float minCell[3] = {selected[0], selected[1], (selected[2] - 1) * layerDepth};
     float maxCell[3] = {selected[0] + 1, selected[1] + 1, selected[2] * layerDepth};
-    Lineset * cell = createCuboid(memory, minCell, maxCell);
+    Lineset * cell = createCuboid(minCell, maxCell);
     renderLineset(cell, mat, backBuffer, red);
 
-    memory->free(memory, extents);
-    memory->free(memory, cell);
+    free(extents);
+    free(cell);
 }
 
 
-Map * createMap(Memory * memory, EFI_UINT32 width, EFI_UINT32 height)
+Map * createMap(EFI_UINT32 width, EFI_UINT32 height)
 {
-    Map * map = (Map *) memory->malloc(memory, sizeof(Map) + sizeof(EFI_UINT8) * width * height);
+    Map * map = (Map *) malloc(sizeof(Map) + sizeof(EFI_UINT8) * width * height);
     map->width = width;
     map->height = height;
     return map;
@@ -139,13 +139,12 @@ void move(int pos[3], int axis, int direction)
 // entry point
 EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 {
-    *((int volatile *)&_fltused)=0; //prevent LTO from removing the marker symbol _fltused
+    efi_initialize_global_state(system_table);
+    useFloatingPointMath(); //enable floating point math, otherwise the compiler will optimizethe _fltused symbol out
 
     EFI_BOOT_SERVICES *boot_services = system_table->BootServices;
     EFI_STATUS status;
     int ns;
-
-    Memory memory = initializeMemory(boot_services);
     
     EFI_GUID gfx_out_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
     EFI_GRAPHICS_OUTPUT_PROTOCOL * gfx_out_prot;
@@ -168,19 +167,19 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     srand(time.Second);
 
     Bitmap * tiles[] = {
-        allocateBitmapForBuffer(&memory, 32, 32, 32, tile_000),
-        allocateBitmapForBuffer(&memory, 32, 32, 32, tile_001),
-        allocateBitmapForBuffer(&memory, 32, 32, 32, tile_002),
-        allocateBitmapForBuffer(&memory, 32, 32, 32, tile_004),
-        allocateBitmapForBuffer(&memory, 32, 32, 32, tile_005),
-        allocateBitmapForBuffer(&memory, 32, 32, 32, tile_006),
-        allocateBitmapForBuffer(&memory, 32, 32, 32, tile_007),
-        allocateBitmapForBuffer(&memory, 32, 32, 32, tile_008),
-        allocateBitmapForBuffer(&memory, 32, 32, 32, tile_009),
-        allocateBitmapForBuffer(&memory, 32, 32, 32, tile_010),
-        allocateBitmapForBuffer(&memory, 32, 32, 32, tile_022),
-        allocateBitmapForBuffer(&memory, 32, 32, 32, tile_023),
-        allocateBitmapForBuffer(&memory, 32, 32, 32, tile_040),
+        allocateBitmapForBuffer(32, 32, 32, tile_000),
+        allocateBitmapForBuffer(32, 32, 32, tile_001),
+        allocateBitmapForBuffer(32, 32, 32, tile_002),
+        allocateBitmapForBuffer(32, 32, 32, tile_004),
+        allocateBitmapForBuffer(32, 32, 32, tile_005),
+        allocateBitmapForBuffer(32, 32, 32, tile_006),
+        allocateBitmapForBuffer(32, 32, 32, tile_007),
+        allocateBitmapForBuffer(32, 32, 32, tile_008),
+        allocateBitmapForBuffer(32, 32, 32, tile_009),
+        allocateBitmapForBuffer(32, 32, 32, tile_010),
+        allocateBitmapForBuffer(32, 32, 32, tile_022),
+        allocateBitmapForBuffer(32, 32, 32, tile_023),
+        allocateBitmapForBuffer(32, 32, 32, tile_040),
         NULL,
         NULL,
         NULL,
@@ -189,14 +188,14 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 
     Bitmap screen;
     initializeBitmapFromScreenBuffer(&screen, gfx_out_prot);
-    Bitmap * backBuffer = allocateBitmap(screen.width, screen.height, &memory);
+    Bitmap * backBuffer = allocateBitmap(screen.width, screen.height);
 
     int selected[3] = {1,19,9};
     
-    Map * map = createMap(&memory, 20, 20);
+    Map * map = createMap(20, 20);
     fillMap(map, 16); 
     
-    drawMap(&memory, map, backBuffer, tiles, selected);
+    drawMap(map, backBuffer, tiles, selected);
     drawBitmapToScreen(gfx_out_prot, 0, 0, backBuffer);
     for (;;)
     {
@@ -232,7 +231,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
                 break;
         }
         if (!cont){
-            drawMap(&memory, map, backBuffer, tiles, selected);
+            drawMap(map, backBuffer, tiles, selected);
             drawBitmapToScreen(gfx_out_prot, 0, 0, backBuffer);
         } 
         else switch (key.UnicodeChar)
@@ -240,7 +239,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
             case 'm':
                 fillScreen(gfx_out_prot, color(0,0,0));
                 fillMap(map, 16);
-                drawMap(&memory, map, backBuffer, tiles, selected);
+                drawMap(map, backBuffer, tiles, selected);
                 drawBitmapToScreen(gfx_out_prot, 0, 0, backBuffer);      
                 break;
             default:              
