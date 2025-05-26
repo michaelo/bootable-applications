@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include "shared/utils.h"
+#include "shared/bitmap.h"
 
 #ifndef BASIC_TEXT
 #include "font8x8/font8x8_latin.h"
@@ -221,7 +222,7 @@ static EFI_UINT64 renderString(Bitmap *bitmap, int dx, int dy, Color_BGRA bg, Co
         renderCharOptimizeTest(bitmap, dx + (size * cidx), dy, bg, fg, size, text[cidx]);
         cidx += 1;
     }
-    return cidx * 8;
+    return cidx * size;
 }
 
 static EFI_UINT64 renderStringOutline(Bitmap *bitmap, int dx, int dy, Color_BGRA fg, Color_BGRA outline, EFI_UINT16 outline_size, EFI_UINT16 size, EFI_UINT16 *text)
@@ -261,7 +262,7 @@ static EFI_UINTN FormatterVZ(EFI_UINT16 *out, EFI_UINTN cap, const EFI_UINT16 *f
         return 0;
 
 // const size_t scratch_size = 32;
-#define scratch_size 32
+#define scratch_size 64
     EFI_UINTN format_idx = 0;
     EFI_UINTN format_len = StrLen(format);
     EFI_UINTN out_idx = 0;
@@ -366,7 +367,7 @@ static EFI_UINTN FormatterVZ(EFI_UINT16 *out, EFI_UINTN cap, const EFI_UINT16 *f
 
                     // Copy formatted int to output
                     // TODO: what to do when reaching end of output buffer
-                    for (int i = 0; i < int_len; i++)
+                    for (int i = 0; i < 2+int_len; i++)
                     {
                         // TODO: can calculate this outside of for and cut limit
                         if (out_idx < cap)
