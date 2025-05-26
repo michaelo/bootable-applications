@@ -33,6 +33,7 @@ static EFI_UINTN IntLen(EFI_INTN value, EFI_UINTN base)
 // capacity: size, excluding e.g. terminating null - must be handled outside.
 // base: <=16
 // returns number of digits formatted
+// TODO: Add variant for EFI_UINTN as well
 static EFI_UINTN FormatInt(EFI_UINT16 *buffer, EFI_UINTN capacity, EFI_INTN value, EFI_UINTN base)
 {
     if (base > 16)
@@ -260,13 +261,12 @@ static EFI_UINTN FormatterVZ(EFI_UINT16 *out, EFI_UINTN cap, const EFI_UINT16 *f
 
     if (cap == 0)
         return 0;
-
-// const size_t scratch_size = 32;
-#define scratch_size 64
+    
     EFI_UINTN format_idx = 0;
     EFI_UINTN format_len = StrLen(format);
     EFI_UINTN out_idx = 0;
-
+        
+    static const EFI_UINTN scratch_size = 64;
     EFI_UINT16 scratch[scratch_size];
 
     FormatterState state = FormatterState_raw;
@@ -334,10 +334,11 @@ static EFI_UINTN FormatterVZ(EFI_UINT16 *out, EFI_UINTN cap, const EFI_UINT16 *f
                     state = FormatterState_raw;
                 }
                 break;
+            // TODO: Add support for unsigned
             case 'd':
                 // va_arg as int decimal
                 {
-                    int int_value = va_arg(args, int);
+                    EFI_INTN int_value = va_arg(args, EFI_INTN);
                     int int_len = FormatInt(scratch, scratch_size, int_value, 10);
 
                     // Copy formatted int to output
@@ -357,10 +358,11 @@ static EFI_UINTN FormatterVZ(EFI_UINT16 *out, EFI_UINTN cap, const EFI_UINT16 *f
                     state = FormatterState_raw;
                 }
                 break;
+            // TODO: add support for unsigned
             case 'x':
                 // va_arg as int hexadecimal
                 {
-                    int int_value = va_arg(args, int);
+                    EFI_INTN int_value = va_arg(args, EFI_INTN);
                     scratch[0] = '0';
                     scratch[1] = 'x';
                     int int_len = FormatInt(&scratch[2], scratch_size - 2, int_value, 16);
