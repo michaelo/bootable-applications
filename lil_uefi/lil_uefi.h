@@ -1176,4 +1176,26 @@ typedef struct EFI_USB2_HC_PROTOCOL{
 
 // TODO: SPEC: Section 37
 
+// SPEC: Section 39
+#define EFI_TIMESTAMP_PROTOCOL_GUID \
+EFI_GuidVal(0xafbfde41, 0x2e6e, 0x4262, 0xba, 0x65, 0x62, 0xb9, 0x23, 0x6e, 0x54, 0x95)
+
+typedef struct EFI_TIMESTAMP_PROPERTIES {
+    EFI_UINT64          Frequency;
+    EFI_UINT64          EndValue;
+} EFI_TIMESTAMP_PROPERTIES;
+
+struct EFI_TIMESTAMP_PROTOCOL;
+
+#define X(N, R, P) typedef R EFIAPI EFI_GraphicsOutputProtocol_##N P;
+#include "lil_uefi_timestamp_protocol_funcs.h"
+#undef X
+
+typedef struct EFI_TIMESTAMP_PROTOCOL{
+#define X(N, R, P) EFI_GraphicsOutputProtocol_##N *N;
+#include "lil_uefi_timestamp_protocol_funcs.h"
+#undef X
+
+} EFI_TIMESTAMP_PROTOCOL;
+
 #endif // LIL_UEFI_H
