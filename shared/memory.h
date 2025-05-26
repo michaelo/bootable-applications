@@ -80,7 +80,7 @@ static void * memset_unrolled(void * dst, EFI_UINT32 value, unsigned long long c
         dst32[13] = value;
         dst32[14] = value;
         dst32[15] = value;
-        
+
         dst32 += 16;
         count -= 16;
     }
@@ -105,22 +105,23 @@ static void * memset_vector(void * dst, EFI_UINT32 value, unsigned long long cou
     unsigned long long numBlocks = count / blocksize; //number of 16-integer (512 bit) blocks
     if (numBlocks) {
         __asm__ __volatile__ (
-            "movd      %[val], %%xmm0\n\t"
-            "pshufd    $0, %%xmm0, %%xmm0\n\t"
-            "1:\n\t"
-            "movdqa    %%xmm0, (%[dst])\n\t"
-            "addq      $16, %[dst]\n\t"
-            "movdqa    %%xmm0, (%[dst])\n\t"
-            "addq      $16, %[dst]\n\t"
-            "movdqa    %%xmm0, (%[dst])\n\t"
-            "addq      $16, %[dst]\n\t"
-            "movdqa    %%xmm0, (%[dst])\n\t"
-            "addq      $16, %[dst]\n\t"
-            "decq      %[n]\n\t"
-            "jnz       1b\n\t"
-            : [dst] "+r"(dst32), [n] "+r"(numBlocks)
-            : [val] "r"(value)
-            : "xmm0", "memory"
+            "movd      %[val], %%xmm0\n\t"              // Load the value into xmm0
+            "pshufd    $0, %%xmm0, %%xmm0\n\t"          // Broadcast the value to all elements of xmm0
+            "1:\n\t"                                    // Loop label
+            "movdqa    %%xmm0, (%[dst])\n\t"            // -- Store the value in xmm0 to the dst32
+            "addq      $16, %[dst]\n\t"                 // -- Move the destination pointer forward by 16 bytes
+            "movdqa    %%xmm0, (%[dst])\n\t"            // -- Store the value in xmm0 to the dst32
+            "addq      $16, %[dst]\n\t"                 // -- Move the destination pointer forward by 16 bytes
+            "movdqa    %%xmm0, (%[dst])\n\t"            // -- Store the value in xmm0 to the dst32
+            "addq      $16, %[dst]\n\t"                 // -- Move the destination pointer forward by 16 bytes
+            "movdqa    %%xmm0, (%[dst])\n\t"            // -- Store the value in xmm0 to the dst32
+            "addq      $16, %[dst]\n\t"                 // -- Move the destination pointer forward by 16 bytes
+            "decq      %[n]\n\t"                        // We have now processed one block of 16 ints, decrement the block count
+            "jnz       1b\n\t"                          // If there are more blocks, jump back to the loop label
+            : [dst] "+r"(dst32), [n] "+r"(numBlocks)    // Output: These operands are modified by the assembly code
+            : [val] "r"(value)                          // Input: These operands are read by the assembly code
+            : "cc", "memory", "xmm0"                    // Clobbered registers: These registers are modified by the assembly code
+                                                        // "cc" indicates that the condition codes may be modified 
         );
         count %= blocksize; //update count to remaining bytes after processing blocks
     }
