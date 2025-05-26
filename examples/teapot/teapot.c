@@ -13,11 +13,11 @@ EFI_GRAPHICS_OUTPUT_BLT_PIXEL colorfunc(float point[3])
     return color(zscaled,zscaled,zscaled);
 }
 
-Lineset * loadTeapotData(Memory * memory)
+Lineset * loadTeapotData()
 {
-    Lineset * teapot_data = allocateLineset(memory, teapotVertsCount, teapotFaceIndexesCount, 3, 1);
-    memory->memcpy(memory, teapot_data->vertices, teapotVerts, teapotVertsCount * sizeof(float) * 3);
-    memory->memcpy(memory, teapot_data->lines, teapotFaceIndexes, teapotFaceIndexesCount * sizeof(int) * 3);
+    Lineset * teapot_data = allocateLineset(teapotVertsCount, teapotFaceIndexesCount, 3, 1);
+    memcpy(teapot_data->vertices, teapotVerts, teapotVertsCount * sizeof(float) * 3);
+    memcpy(teapot_data->lines, teapotFaceIndexes, teapotFaceIndexesCount * sizeof(int) * 3);
     return teapot_data;
 }
 
@@ -41,12 +41,12 @@ void teapot(Bitmap * backBuffer, Lineset * teapot_data, float zdeg)
 // static int __chkstk = 0;
 EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 {
-    *((int volatile *)&_fltused)=0; //prevent LTO from removing the marker symbol _fltused
+    efi_initialize_global_state(system_table);
+    useFloatingPointMath();
 
     EFI_BOOT_SERVICES *boot_services = system_table->BootServices;
     EFI_STATUS status;
 
-    Memory memory = initializeMemory(boot_services);
 
     EFI_GUID gfx_out_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
     EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx_out_prot;
@@ -59,8 +59,8 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 
     Bitmap screen;
     initializeBitmapFromScreenBuffer(&screen, gfx_out_prot);
-    Bitmap * backBuffer = allocateBitmap(screen.width, screen.height, &memory);
-    Lineset * teapot_data = loadTeapotData(&memory);
+    Bitmap * backBuffer = allocateBitmap(screen.width, screen.height);
+    Lineset * teapot_data = loadTeapotData();
 
     double t = 0;
 

@@ -1,55 +1,35 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include "lil_uefi/lil_uefi.h"
+#include "shared/efi_global_state.h"
 
-typedef struct Memory_S {
-    const EFI_BOOT_SERVICES *boot_services;
-    void* (*malloc)(struct Memory_S *, unsigned long long);
-    void* (*memcpy)(struct Memory_S *, void * dst, const void * src, unsigned long long len);
-    void* (*memset)(struct Memory_S *, void * dst, int value, unsigned long long len);
-    void (*free)(struct Memory_S *, void * ptr);
-} Memory;
-
-static void * memory_h_malloc(Memory * this_, unsigned long long size)
+static void * malloc(unsigned long long size)
 {
     EFI_STATUS error;
     void * handle;
-    error = this_->boot_services->AllocatePool(EFI_MEMORY_TYPE_EfiLoaderData, size, &handle);
+    error = efi_boot_services()->AllocatePool(EFI_MEMORY_TYPE_EfiLoaderData, size, &handle);
     return error ? 0 : handle;
 }
 
-static void memory_h_free(Memory * this_, void * ptr)
+static void free(void * ptr)
 {
-    this_->boot_services->FreePool(ptr);
+    efi_boot_services()->FreePool(ptr);
 }
 
-static void * memory_h_memcpy(Memory * this_, void * dst, const void * src, unsigned long long len)
+static void * memcpy(void * dst, const void * src, unsigned long long len)
 {
-    this_->boot_services->CopyMem(dst, (void*)src, len);
+    efi_boot_services()->CopyMem(dst, (void*)src, len);
     return dst;
 }
 
-static void * memory_h_memset(Memory * this_, void * dst, int value, unsigned long long len)
+static void * memset(void * dst, int value, unsigned long long len)
 {
-    this_->boot_services->SetMem(dst, len, value);
+    efi_boot_services()->SetMem(dst, len, value);
     return dst;
-}
-
-static Memory initializeMemory(EFI_BOOT_SERVICES *boot_services_ptr)
-{
-    Memory memory = {
-        .boot_services = boot_services_ptr,
-        .malloc = memory_h_malloc,
-        .memcpy = memory_h_memcpy,
-        .memset = memory_h_memset,
-        .free = memory_h_free
-    };
-    return memory;
 }
 
 //Unoptimized memcpy that needs no boot_services pointer
-static void * memcpy(void * dst, void * src, unsigned long long len)
+static void * memcpy_naive(void * dst, void * src, unsigned long long len)
 {
     char * dst_char = (char*)dst;
     char * src_char = (char*)src;
@@ -60,12 +40,94 @@ static void * memcpy(void * dst, void * src, unsigned long long len)
 }
 
 //Unoptimized memset that needs no boot_services pointer
-static void * memset(void * dst, int value, unsigned long long len)
+static void * memset_naive(void * dst, int value, unsigned long long len)
 {
     unsigned char * dst_char = (unsigned char*)dst;
     unsigned char cvalue = (unsigned char)value;
     for (int i = 0; i < len; i++){
         dst_char[i] = value;
+    }
+    return dst;
+}
+
+#define IS_ALIGNED(ptr) (((unsigned long long)ptr & 15) == 0)
+
+// Unrolled memset 
+static void * memset_unrolled(void * dst, EFI_UINT32 value, unsigned long long count)
+{
+    EFI_UINT32 * dst32 = (EFI_UINT32 *)dst;
+    while (!IS_ALIGNED(dst32) && count > 0) //handle unaligned start
+    {
+        *dst32 = value;
+        dst32 += 1;
+        count--;
+    }
+    while (count >= 16) //handle aligned blocks of 8 uints
+    {
+        dst32[0] = value;
+        dst32[1] = value;
+        dst32[2] = value;
+        dst32[3] = value;
+        dst32[4] = value;
+        dst32[5] = value;
+        dst32[6] = value;
+        dst32[7] = value;
+        dst32[8] = value;
+        dst32[9] = value;
+        dst32[10] = value;
+        dst32[11] = value;
+        dst32[12] = value;
+        dst32[13] = value;
+        dst32[14] = value;
+        dst32[15] = value;
+
+        dst32 += 16;
+        count -= 16;
+    }
+    while (count > 0) //handle remaining bytes
+    {
+        *dst32 = value;
+        dst32 = &dst32[1];        
+        count--;
+    }
+    return dst;
+}
+
+// vectorized memset 
+static void * memset_vector(void * dst, EFI_UINT32 value, unsigned long long count)
+{
+    EFI_UINT32 * dst32 = (EFI_UINT32 *)dst;
+    while (!IS_ALIGNED(dst32) && count-- > 0) //handle unaligned start
+    {
+        *dst32++ = value;
+    }
+    unsigned long long blocksize = 16; // 16 integers = 512 bits
+    unsigned long long numBlocks = count / blocksize; //number of 16-integer (512 bit) blocks
+    if (numBlocks) {
+        __asm__ __volatile__ (
+            "movd      %[val], %%xmm0\n\t"              // Load the value into xmm0
+            "pshufd    $0, %%xmm0, %%xmm0\n\t"          // Broadcast the value to all elements of xmm0
+            "1:\n\t"                                    // Loop label
+            "movdqa    %%xmm0, (%[dst])\n\t"            // -- Store the value in xmm0 to the dst32
+            "addq      $16, %[dst]\n\t"                 // -- Move the destination pointer forward by 16 bytes
+            "movdqa    %%xmm0, (%[dst])\n\t"            // -- Store the value in xmm0 to the dst32
+            "addq      $16, %[dst]\n\t"                 // -- Move the destination pointer forward by 16 bytes
+            "movdqa    %%xmm0, (%[dst])\n\t"            // -- Store the value in xmm0 to the dst32
+            "addq      $16, %[dst]\n\t"                 // -- Move the destination pointer forward by 16 bytes
+            "movdqa    %%xmm0, (%[dst])\n\t"            // -- Store the value in xmm0 to the dst32
+            "addq      $16, %[dst]\n\t"                 // -- Move the destination pointer forward by 16 bytes
+            "decq      %[n]\n\t"                        // We have now processed one block of 16 ints, decrement the block count
+            "jnz       1b\n\t"                          // If there are more blocks, jump back to the loop label
+            : [dst] "+r"(dst32), [n] "+r"(numBlocks)    // Output: These operands are modified by the assembly code
+            : [val] "r"(value)                          // Input: These operands are read by the assembly code
+            : "cc", "memory", "xmm0"                    // Clobbered registers: These registers are modified by the assembly code
+                                                        // "cc" indicates that the condition codes may be modified 
+        );
+        count %= blocksize; //update count to remaining bytes after processing blocks
+    }
+    while (count-- > 0) //handle remaining bytes
+    {
+        *dst32++ = value;
     }
     return dst;
 }
