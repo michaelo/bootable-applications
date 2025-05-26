@@ -60,15 +60,34 @@ void runBenchmark(Benchmark * benchmark)
     efi_boot_services()->CloseEvent(TimerEvent);
 }
 
+
 EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx_out;
 Bitmap screen;
 Color_BGRA orange;
 Color_BGRA pink;
 Color_BGRA green;
+Color_BGRA blue;
+Color_BGRA red;
 
 Bitmap * backBuffer;
+unsigned short text[SCRATCH_SIZE];
 
 int white = 0xff;
+
+void runAllBenchmarks(Benchmark * benchmarks, int numBenchmarks)
+{
+        for(int i = 0; i < numBenchmarks; i++)
+        {
+            runBenchmark(&benchmarks[i]);            
+        }
+
+        for(int i = 0; i < numBenchmarks; i++)
+        {
+            FormatterZ(text, SCRATCH_SIZE, L"%s: %d iterations in approx %d ms", benchmarks[i].name, benchmarks[i].num, (int)(benchmarks[i].timeSeconds * 1000));
+            renderStringOutline(&screen, 50, 50 + (i * 16), color(0,0,0), color(255,255,255), 1, 8, text);
+        }
+}
+
 
 void fillScreenNaive(void * state)
 {
@@ -105,6 +124,36 @@ void fillBitmapMemset(void * state)
     memset(backBuffer->buffer, *(int*)state, screen.stride * screen.height * 4);
 }
 
+void fillBitmapMemsetUnrolled(void * state)
+{
+    memset_unrolled(backBuffer->buffer, *(int*)state, screen.stride * screen.height);
+}
+
+void fillBitmapMemsetVector(void * state)
+{
+    memset_vector(backBuffer->buffer, *(int*)state, screen.stride * screen.height);
+}
+
+void calcSin(void * state)
+{
+    sin(0.5f); // Just a dummy operation to test performance
+}
+
+void calcCos(void * state)
+{
+    cos(0.5f); // Just a dummy operation to test performance
+}
+
+void calcTan(void * state)
+{
+    tan(0.5f); // Just a dummy operation to test performance
+}
+
+void calcSqrt(void * state)
+{
+    sqrt(0.5f); // Just a dummy operation to test performance
+}
+
 // entry point
 EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 {
@@ -129,7 +178,8 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     orange = color(255,128,0);
     pink = color(255,200,200);
     green = color(0,255,0);
-    unsigned short text[SCRATCH_SIZE];
+    blue = color(30,30,255);
+    red = color(255,0,0);
 
     EFI_UINTN keyEvent;
     EFI_INPUT_KEY key;
@@ -138,29 +188,26 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
         createBenchmark(L"FillScreenNaive", fillScreenNaive, &pink),
         createBenchmark(L"FillScreenMemSet", fillScreenMemset, &white),
         createBenchmark(L"FillScreenBlt", fillScreenBlt, &orange),
-        createBenchmark(L"FillBitmapMemSet", fillBitmapMemset, &white),
-        createBenchmark(L"BitmapScreenBlt", bitmapScreenBlt, 0),
         createBenchmark(L"FillBitmapNaive", fillBitmapNaive, &green),
+        createBenchmark(L"FillBitmapMemSet", fillBitmapMemset, &white),
+        createBenchmark(L"FillBitmapMemSetUnrolled", fillBitmapMemsetUnrolled, &blue),
+        createBenchmark(L"FillBitmapMemSetVector", fillBitmapMemsetVector, &red),
         createBenchmark(L"BitmapScreenMemcpy", bitmapScreenMemcpy, 0),
+        createBenchmark(L"BitmapScreenBlt", bitmapScreenBlt, 0),
+        createBenchmark(L"CalcSin", calcSin, 0),
+        createBenchmark(L"CalcCos", calcCos, 0),
+        createBenchmark(L"CalcTan", calcTan, 0),
+        createBenchmark(L"CalcSqrt", calcSqrt, 0)
     };
 
     int numBenchmarks = sizeof(benchmarks) / sizeof(Benchmark);
 
+    runAllBenchmarks(benchmarks, numBenchmarks);
     for (;;)
     {
         system_table->BootServices->WaitForEvent(1, &system_table->ConIn->WaitForKey, &keyEvent);
         system_table->ConIn->ReadKeyStroke(system_table->ConIn, &key);
-
-        for(int i = 0; i < numBenchmarks; i++)
-        {
-            runBenchmark(&benchmarks[i]);            
-        }
-
-        for(int i = 0; i < numBenchmarks; i++)
-        {
-            FormatterZ(text, SCRATCH_SIZE, L"%s: %d iterations in approx %d ms", benchmarks[i].name, benchmarks[i].num, (int)(benchmarks[i].timeSeconds * 1000));
-            renderStringOutline(&screen, 50, 50 + (i * 16), color(0,0,0), color(255,255,255), 1, 8, text);
-        }
+        runAllBenchmarks(benchmarks, numBenchmarks);
     }
 
     return 0;
