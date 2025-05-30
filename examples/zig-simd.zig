@@ -1,0 +1,458 @@
+const std = @import("std");
+const uefi = std.os.uefi;
+
+// TODO: settle on pixel-primitive: u32 eller Color_RGBA?
+
+const W = std.unicode.utf8ToUtf16LeStringLiteral;
+
+// Simple helper to - utilizing pre-allocated buffers - provide a slice of formatted utf16-string ready to pass to e.g. outputString()
+fn formatToU16(buf8: []u8, buf16: []u16, comptime format: []const u8, vars: anytype) [:0]const u16 {
+    const formatted = std.fmt.bufPrint(buf8, format, vars) catch "";
+    _ = std.unicode.utf8ToUtf16Le(buf16, formatted) catch 0;
+    buf16[formatted.len] = 0;
+    return buf16[0..formatted.len:0];
+}
+
+fn colorToInt(c: Color_BGRA) u32 {
+    return @bitCast(c);
+}
+
+fn fill(params: struct {buffer: []u32, value: u32}) void {
+    for (params.buffer) |*v| {
+        v.* = params.value;
+    }
+}
+
+fn memset(params: struct { buffer: []u32, value: u32}) void {
+    @memset(params.buffer, params.value);
+}
+
+fn vectorFill(params: struct {buffer: []u32, value: u32}) void {
+    const simd_width = 8;
+    var idx:usize = 0;
+
+    const len = if(params.buffer.len % simd_width == 0) params.buffer.len else params.buffer.len - (params.buffer.len % simd_width);
+    const c = params.value;
+    while(idx < len) : (idx += simd_width) {
+        // var chunk: @Vector(simd_width, u32) = buffer[idx..idx+simd_width][0..simd_width].*;
+        // chunk = @splat(value);
+        // buffer[idx..idx+simd_width][0..simd_width].* = chunk;
+        params.buffer[idx..idx + simd_width][0..simd_width].* = @as(@Vector(simd_width, u32), @splat(c));
+    }
+
+    for(params.buffer[len..]) |*v| {
+        v.* = params.value;
+    }
+}
+
+fn blt(params: struct {gfx: *uefi.protocol.GraphicsOutput, value: u32}) void {
+    var value: u32 = params.value;
+    _ = params.gfx.blt(
+        @as(?[*]uefi.protocol.GraphicsOutput.BltPixel, @ptrCast(&value)), 
+        uefi.protocol.GraphicsOutput.BltOperation.BltVideoFill,
+        0, 0, 0, 0,
+        params.gfx.mode.info.horizontal_resolution, params.gfx.mode.info.vertical_resolution,
+        0);
+}
+
+test "fill" {
+    var data = [_]u32{0,0,0,0};
+    fill(data[0..], @bitCast(1));
+    try std.testing.expectEqualSlices(u32, &[_]u32{1, 1, 1, 1}, data[0..]);
+}
+
+test "vectorFill" {
+    var data = [_]u32{0,0,0,0,0};
+    vectorFill(data[0..], @bitCast(1));
+    try std.testing.expectEqualSlices(u32, &[_]u32{1, 1, 1, 1, 1}, data[0..]);
+}
+
+fn timeToRelativeS(t: uefi.Time) f64 {
+    return
+        @as(f64, @floatFromInt(t.hour)) * 60 * 60 +
+        @as(f64, @floatFromInt(t.minute)) * 60 +
+        @as(f64, @floatFromInt(t.second)) +
+        @as(f64, @floatFromInt(t.nanosecond))/1000_000_1000;
+}
+
+// Entry point. Zig handles assignment of system_table and uefi handle to uefi.system_table and uefi.handle respectively.
+pub fn main() usize {
+    const con_out = uefi.system_table.con_out.?;
+    _ = con_out.reset(false);
+
+    const boot_services = uefi.system_table.boot_services.?;
+    _ = boot_services.setWatchdogTimer(0, 0, 0, null);
+    var maybe_gfx: ?*uefi.protocol.GraphicsOutput = null;
+
+    if(boot_services.locateProtocol(&uefi.protocol.GraphicsOutput.guid, null, @as(*?*anyopaque, @ptrCast(&maybe_gfx))) != uefi.Status.Success) {
+        return 1;
+    }
+
+    if(maybe_gfx == null) {
+        return 1;
+    }
+
+    const gfx = maybe_gfx.?;
+    _ = gfx.setMode(6); // qemu 1024*768
+    const buf = @as([*]u32, @ptrFromInt(gfx.mode.frame_buffer_base))[0..gfx.mode.frame_buffer_size/4];
+
+    var color: u32 = 0x00cc9933;
+    var event_idx: u64 = undefined;
+
+    fill(.{.buffer = buf, .value = color});
+    var screen = Bitmap {
+        .width = gfx.mode.info.horizontal_resolution,
+        .height = gfx.mode.info.vertical_resolution,
+        .stride = gfx.mode.info.pixels_per_scan_line,
+        .buffer = buf
+    };
+
+    var backbuffer = Bitmap {
+        .width = gfx.mode.info.horizontal_resolution,
+        .height = gfx.mode.info.vertical_resolution,
+        .stride = gfx.mode.info.pixels_per_scan_line,
+        .buffer = undefined,
+    };
+
+    // TODO: Fix. Causes crash when written to
+    var buffer_ptr: [*]align(8) u8 = undefined;
+    const backbuffer_size: usize = @intCast(backbuffer.stride*backbuffer.height);
+    _ = uefi.system_table.boot_services.?.allocatePool(.LoaderData, backbuffer_size*4, &buffer_ptr);
+    backbuffer.buffer = @as([*]u32, @ptrCast(buffer_ptr))[0..backbuffer_size];
+
+    // backbuffer.buffer = 
+
+    const events = @as([*]uefi.Event, @ptrCast(&uefi.system_table.con_in.?.wait_for_key));
+
+    // TODO: is the system table globally accessible? If so, remove from params
+    const test_params: Params = .{
+        .system_table = uefi.system_table,
+        .target_time_seconds = 4,
+    };
+    var out_ctx: OutCtx = .{
+        .bitmap = &screen,
+        .fg = 0x00ffffff,
+        .outline = 0x0,
+        .x = 10,
+        .y = 10,
+        .size = 16,
+    };
+    while(true) {
+        
+        var key: uefi.protocol.SimpleTextInput.Key.Input = undefined;
+        color = 0x003399cc;
+
+        // Register all test cases
+        const result_set = .{
+            runner(test_params, "fill to screen", fill, .{.buffer = screen.buffer, .value = color}),
+            runner(test_params, "vector to screen", vectorFill, .{.buffer = screen.buffer, .value = color}),
+            runner(test_params, "memset screen", memset, .{.buffer = screen.buffer, .value = color}),
+            runner(test_params, "blt single color", blt, .{.gfx = gfx, .value = color}),
+
+            runner(test_params, "fill to backbuffer", fill, .{.buffer = backbuffer.buffer, .value = color}),
+            runner(test_params, "vector to backbuffer", vectorFill, .{.buffer = backbuffer.buffer, .value = color}),
+            runner(test_params, "memset backbuffer", memset, .{.buffer = backbuffer.buffer, .value = color})
+
+            // TODO: blt backbuffer to screen
+        };
+
+        // Print all test results to screen
+        inline for(result_set, 0..) |result, i| {
+            out_ctx.y = 10 + i*20;
+            out(out_ctx, "{s:20}: avg: {d:.0}/s | {d:.3}ms/iter ({d} iter in {d}s)\n", 
+                .{result.label, result.time_pr_iter, result.iter_pr_second, result.iters, result.total_time});
+        }
+
+        // Wait for keypress before starting over again
+        _ = boot_services.waitForEvent(1, events, &event_idx);
+        _ = uefi.system_table.con_in.?.readKeyStroke(&key);
+    }
+
+    return 0;
+}
+
+
+const Color_BGRA = uefi.protocol.GraphicsOutput.BltPixel;
+
+const Bitmap = struct {
+    width: i64,
+    stride: i64,
+    height: i64,
+    // buffer: []Color_BGRA
+    buffer: []u32
+};
+
+fn getGlyph(ord: u32) ?[8]u8
+{
+    if (ord < 0)
+        return null;
+
+    if (ord <= 0x7F)
+    {
+        // Contains an 8x8 font map for unicode points U+0000 - U+007F (basic latin)
+        return font8x8_basic[ord];
+    }
+
+    return null;
+}
+
+fn scaled(x: anytype, s: f32) usize {
+    return @intFromFloat(@floor(@as(f32, @floatFromInt(x)) * s));
+}
+
+// TODO: replace with renderCharOptimizeTest
+fn renderChar(bitmap: *Bitmap, dx: i64, dy: i64, bg: u32, fg: u32, size: u16, ord: u32) void
+{
+    const maybe_glyph = getGlyph(ord);
+    if (maybe_glyph == null)
+        return;
+
+    const glyph = maybe_glyph.?;
+
+    const scale = 8.0 / @as(f32, @floatFromInt(size));
+    _ = bg;
+
+    for(0..size) |x| 
+    {
+        const px = dx + @as(i64, @intCast(x));
+        if (px < 0 or px >= bitmap.width)
+            continue;
+
+        for (0..size) |y|
+        {
+            const py = dy + @as(i64, @intCast(y));
+            if (py < 0 or py >= bitmap.height)
+                continue;
+
+            const set = glyph[scaled(y, scale)] & @as(u8, 1) << @as(u3, @intCast(scaled(x, scale)));
+            const idx = py * bitmap.stride + px;
+            bitmap.buffer[@intCast(idx)] = if (set!=0) fg
+                                // transparent if reserved == 0
+                                // else if (bg.reserved > 0) bg
+                                else bitmap.buffer[@intCast(idx)];
+        }
+    }
+}
+
+fn renderString(bitmap: *Bitmap, dx: i64, dy: i64, bg: u32, fg: u32, size: u16, text: []const u16) i64
+{
+    var cidx: i64 = 0;
+
+    for(text) |c|
+    {
+        renderChar(bitmap, dx + (size * cidx), dy, bg, fg, size, c);
+        cidx += 1;
+    }
+
+    return cidx * size;
+}
+
+fn renderStringOutline(bitmap: *Bitmap, x: i64, y: i64, outline: u32, fg: u32, size: u16, text: []const u16) i64 {
+    const transparent: u32 = 0xff000000;
+    comptime var dy = -1;
+    inline while (dy <= 1) : (dy +=1) {
+        comptime var dx = -1;
+        inline while (dx <= 1) : (dx +=1) {
+            if(dx == 0 and dy == 0) continue;
+            _ = renderString(bitmap, dx+x, dy+y, transparent, outline, size, text);
+
+        }
+    }
+
+    return renderString(bitmap, x, y, transparent, fg, size, text);
+}
+
+const font8x8_basic: [128][8]u8 = [128][8]u8{
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0000 (nul)
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0001
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0002
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0003
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0004
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0005
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0006
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0007
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0008
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0009
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+000A
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+000B
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+000C
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+000D
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+000E
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+000F
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0010
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0011
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0012
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0013
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0014
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0015
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0016
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0017
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0018
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0019
+    [_]u8{ 0x7C, 0x36, 0x33, 0x7F, 0x33, 0x33, 0x73, 0x00},   // U+00C6 (AE)
+    [_]u8{ 0x5C, 0x36, 0x73, 0x7B, 0x6F, 0x36, 0x1D, 0x00},   // U+00D8 (O stroke)
+    [_]u8{ 0x0C, 0x0C, 0x00, 0x1E, 0x33, 0x3F, 0x33, 0x00},   // U+00C5 (A ring)
+    [_]u8{ 0x00, 0x00, 0xFE, 0x30, 0xFE, 0x33, 0xFE, 0x00},   // U+00E6 (ae)
+    [_]u8{ 0x00, 0x60, 0x3C, 0x76, 0x7E, 0x6E, 0x3C, 0x06},   // U+00F8 (o stroke)
+    [_]u8{ 0x0C, 0x0C, 0x1E, 0x30, 0x3E, 0x33, 0x7E, 0x00},   // U+00E5 (a ring)
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0020 (space)
+    [_]u8{ 0x18, 0x3C, 0x3C, 0x18, 0x18, 0x00, 0x18, 0x00},   // U+0021 (!)
+    [_]u8{ 0x36, 0x36, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0022 (")
+    [_]u8{ 0x36, 0x36, 0x7F, 0x36, 0x7F, 0x36, 0x36, 0x00},   // U+0023 (#)
+    [_]u8{ 0x0C, 0x3E, 0x03, 0x1E, 0x30, 0x1F, 0x0C, 0x00},   // U+0024 ($)
+    [_]u8{ 0x00, 0x63, 0x33, 0x18, 0x0C, 0x66, 0x63, 0x00},   // U+0025 (%)
+    [_]u8{ 0x1C, 0x36, 0x1C, 0x6E, 0x3B, 0x33, 0x6E, 0x00},   // U+0026 (&)
+    [_]u8{ 0x06, 0x06, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0027 (')
+    [_]u8{ 0x18, 0x0C, 0x06, 0x06, 0x06, 0x0C, 0x18, 0x00},   // U+0028 (()
+    [_]u8{ 0x06, 0x0C, 0x18, 0x18, 0x18, 0x0C, 0x06, 0x00},   // U+0029 ())
+    [_]u8{ 0x00, 0x66, 0x3C, 0xFF, 0x3C, 0x66, 0x00, 0x00},   // U+002A (*)
+    [_]u8{ 0x00, 0x0C, 0x0C, 0x3F, 0x0C, 0x0C, 0x00, 0x00},   // U+002B (+)
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x0C, 0x0C, 0x06},   // U+002C (,)
+    [_]u8{ 0x00, 0x00, 0x00, 0x3F, 0x00, 0x00, 0x00, 0x00},   // U+002D (-)
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x0C, 0x0C, 0x00},   // U+002E (.)
+    [_]u8{ 0x60, 0x30, 0x18, 0x0C, 0x06, 0x03, 0x01, 0x00},   // U+002F (/)
+    [_]u8{ 0x3E, 0x63, 0x73, 0x7B, 0x6F, 0x67, 0x3E, 0x00},   // U+0030 (0)
+    [_]u8{ 0x0C, 0x0E, 0x0C, 0x0C, 0x0C, 0x0C, 0x3F, 0x00},   // U+0031 (1)
+    [_]u8{ 0x1E, 0x33, 0x30, 0x1C, 0x06, 0x33, 0x3F, 0x00},   // U+0032 (2)
+    [_]u8{ 0x1E, 0x33, 0x30, 0x1C, 0x30, 0x33, 0x1E, 0x00},   // U+0033 (3)
+    [_]u8{ 0x38, 0x3C, 0x36, 0x33, 0x7F, 0x30, 0x78, 0x00},   // U+0034 (4)
+    [_]u8{ 0x3F, 0x03, 0x1F, 0x30, 0x30, 0x33, 0x1E, 0x00},   // U+0035 (5)
+    [_]u8{ 0x1C, 0x06, 0x03, 0x1F, 0x33, 0x33, 0x1E, 0x00},   // U+0036 (6)
+    [_]u8{ 0x3F, 0x33, 0x30, 0x18, 0x0C, 0x0C, 0x0C, 0x00},   // U+0037 (7)
+    [_]u8{ 0x1E, 0x33, 0x33, 0x1E, 0x33, 0x33, 0x1E, 0x00},   // U+0038 (8)
+    [_]u8{ 0x1E, 0x33, 0x33, 0x3E, 0x30, 0x18, 0x0E, 0x00},   // U+0039 (9)
+    [_]u8{ 0x00, 0x0C, 0x0C, 0x00, 0x00, 0x0C, 0x0C, 0x00},   // U+003A (:)
+    [_]u8{ 0x00, 0x0C, 0x0C, 0x00, 0x00, 0x0C, 0x0C, 0x06},   // U+003B (;)
+    [_]u8{ 0x18, 0x0C, 0x06, 0x03, 0x06, 0x0C, 0x18, 0x00},   // U+003C (<)
+    [_]u8{ 0x00, 0x00, 0x3F, 0x00, 0x00, 0x3F, 0x00, 0x00},   // U+003D (=)
+    [_]u8{ 0x06, 0x0C, 0x18, 0x30, 0x18, 0x0C, 0x06, 0x00},   // U+003E (>)
+    [_]u8{ 0x1E, 0x33, 0x30, 0x18, 0x0C, 0x00, 0x0C, 0x00},   // U+003F (?)
+    [_]u8{ 0x3E, 0x63, 0x7B, 0x7B, 0x7B, 0x03, 0x1E, 0x00},   // U+0040 (@)
+    [_]u8{ 0x0C, 0x1E, 0x33, 0x33, 0x3F, 0x33, 0x33, 0x00},   // U+0041 (A)
+    [_]u8{ 0x3F, 0x66, 0x66, 0x3E, 0x66, 0x66, 0x3F, 0x00},   // U+0042 (B)
+    [_]u8{ 0x3C, 0x66, 0x03, 0x03, 0x03, 0x66, 0x3C, 0x00},   // U+0043 (C)
+    [_]u8{ 0x1F, 0x36, 0x66, 0x66, 0x66, 0x36, 0x1F, 0x00},   // U+0044 (D)
+    [_]u8{ 0x7F, 0x46, 0x16, 0x1E, 0x16, 0x46, 0x7F, 0x00},   // U+0045 (E)
+    [_]u8{ 0x7F, 0x46, 0x16, 0x1E, 0x16, 0x06, 0x0F, 0x00},   // U+0046 (F)
+    [_]u8{ 0x3C, 0x66, 0x03, 0x03, 0x73, 0x66, 0x7C, 0x00},   // U+0047 (G)
+    [_]u8{ 0x33, 0x33, 0x33, 0x3F, 0x33, 0x33, 0x33, 0x00},   // U+0048 (H)
+    [_]u8{ 0x1E, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x1E, 0x00},   // U+0049 (I)
+    [_]u8{ 0x78, 0x30, 0x30, 0x30, 0x33, 0x33, 0x1E, 0x00},   // U+004A (J)
+    [_]u8{ 0x67, 0x66, 0x36, 0x1E, 0x36, 0x66, 0x67, 0x00},   // U+004B (K)
+    [_]u8{ 0x0F, 0x06, 0x06, 0x06, 0x46, 0x66, 0x7F, 0x00},   // U+004C (L)
+    [_]u8{ 0x63, 0x77, 0x7F, 0x7F, 0x6B, 0x63, 0x63, 0x00},   // U+004D (M)
+    [_]u8{ 0x63, 0x67, 0x6F, 0x7B, 0x73, 0x63, 0x63, 0x00},   // U+004E (N)
+    [_]u8{ 0x1C, 0x36, 0x63, 0x63, 0x63, 0x36, 0x1C, 0x00},   // U+004F (O)
+    [_]u8{ 0x3F, 0x66, 0x66, 0x3E, 0x06, 0x06, 0x0F, 0x00},   // U+0050 (P)
+    [_]u8{ 0x1E, 0x33, 0x33, 0x33, 0x3B, 0x1E, 0x38, 0x00},   // U+0051 (Q)
+    [_]u8{ 0x3F, 0x66, 0x66, 0x3E, 0x36, 0x66, 0x67, 0x00},   // U+0052 (R)
+    [_]u8{ 0x1E, 0x33, 0x07, 0x0E, 0x38, 0x33, 0x1E, 0x00},   // U+0053 (S)
+    [_]u8{ 0x3F, 0x2D, 0x0C, 0x0C, 0x0C, 0x0C, 0x1E, 0x00},   // U+0054 (T)
+    [_]u8{ 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x3F, 0x00},   // U+0055 (U)
+    [_]u8{ 0x33, 0x33, 0x33, 0x33, 0x33, 0x1E, 0x0C, 0x00},   // U+0056 (V)
+    [_]u8{ 0x63, 0x63, 0x63, 0x6B, 0x7F, 0x77, 0x63, 0x00},   // U+0057 (W)
+    [_]u8{ 0x63, 0x63, 0x36, 0x1C, 0x1C, 0x36, 0x63, 0x00},   // U+0058 (X)
+    [_]u8{ 0x33, 0x33, 0x33, 0x1E, 0x0C, 0x0C, 0x1E, 0x00},   // U+0059 (Y)
+    [_]u8{ 0x7F, 0x63, 0x31, 0x18, 0x4C, 0x66, 0x7F, 0x00},   // U+005A (Z)
+    [_]u8{ 0x1E, 0x06, 0x06, 0x06, 0x06, 0x06, 0x1E, 0x00},   // U+005B ([)
+    [_]u8{ 0x03, 0x06, 0x0C, 0x18, 0x30, 0x60, 0x40, 0x00},   // U+005C (\)
+    [_]u8{ 0x1E, 0x18, 0x18, 0x18, 0x18, 0x18, 0x1E, 0x00},   // U+005D (])
+    [_]u8{ 0x08, 0x1C, 0x36, 0x63, 0x00, 0x00, 0x00, 0x00},   // U+005E (^)
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF},   // U+005F (_)
+    [_]u8{ 0x0C, 0x0C, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0060 (`)
+    [_]u8{ 0x00, 0x00, 0x1E, 0x30, 0x3E, 0x33, 0x6E, 0x00},   // U+0061 (a)
+    [_]u8{ 0x07, 0x06, 0x06, 0x3E, 0x66, 0x66, 0x3B, 0x00},   // U+0062 (b)
+    [_]u8{ 0x00, 0x00, 0x1E, 0x33, 0x03, 0x33, 0x1E, 0x00},   // U+0063 (c)
+    [_]u8{ 0x38, 0x30, 0x30, 0x3e, 0x33, 0x33, 0x6E, 0x00},   // U+0064 (d)
+    [_]u8{ 0x00, 0x00, 0x1E, 0x33, 0x3f, 0x03, 0x1E, 0x00},   // U+0065 (e)
+    [_]u8{ 0x1C, 0x36, 0x06, 0x0f, 0x06, 0x06, 0x0F, 0x00},   // U+0066 (f)
+    [_]u8{ 0x00, 0x00, 0x6E, 0x33, 0x33, 0x3E, 0x30, 0x1F},   // U+0067 (g)
+    [_]u8{ 0x07, 0x06, 0x36, 0x6E, 0x66, 0x66, 0x67, 0x00},   // U+0068 (h)
+    [_]u8{ 0x0C, 0x00, 0x0E, 0x0C, 0x0C, 0x0C, 0x1E, 0x00},   // U+0069 (i)
+    [_]u8{ 0x30, 0x00, 0x30, 0x30, 0x30, 0x33, 0x33, 0x1E},   // U+006A (j)
+    [_]u8{ 0x07, 0x06, 0x66, 0x36, 0x1E, 0x36, 0x67, 0x00},   // U+006B (k)
+    [_]u8{ 0x0E, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x1E, 0x00},   // U+006C (l)
+    [_]u8{ 0x00, 0x00, 0x33, 0x7F, 0x7F, 0x6B, 0x63, 0x00},   // U+006D (m)
+    [_]u8{ 0x00, 0x00, 0x1F, 0x33, 0x33, 0x33, 0x33, 0x00},   // U+006E (n)
+    [_]u8{ 0x00, 0x00, 0x1E, 0x33, 0x33, 0x33, 0x1E, 0x00},   // U+006F (o)
+    [_]u8{ 0x00, 0x00, 0x3B, 0x66, 0x66, 0x3E, 0x06, 0x0F},   // U+0070 (p)
+    [_]u8{ 0x00, 0x00, 0x6E, 0x33, 0x33, 0x3E, 0x30, 0x78},   // U+0071 (q)
+    [_]u8{ 0x00, 0x00, 0x3B, 0x6E, 0x66, 0x06, 0x0F, 0x00},   // U+0072 (r)
+    [_]u8{ 0x00, 0x00, 0x3E, 0x03, 0x1E, 0x30, 0x1F, 0x00},   // U+0073 (s)
+    [_]u8{ 0x08, 0x0C, 0x3E, 0x0C, 0x0C, 0x2C, 0x18, 0x00},   // U+0074 (t)
+    [_]u8{ 0x00, 0x00, 0x33, 0x33, 0x33, 0x33, 0x6E, 0x00},   // U+0075 (u)
+    [_]u8{ 0x00, 0x00, 0x33, 0x33, 0x33, 0x1E, 0x0C, 0x00},   // U+0076 (v)
+    [_]u8{ 0x00, 0x00, 0x63, 0x6B, 0x7F, 0x7F, 0x36, 0x00},   // U+0077 (w)
+    [_]u8{ 0x00, 0x00, 0x63, 0x36, 0x1C, 0x36, 0x63, 0x00},   // U+0078 (x)
+    [_]u8{ 0x00, 0x00, 0x33, 0x33, 0x33, 0x3E, 0x30, 0x1F},   // U+0079 (y)
+    [_]u8{ 0x00, 0x00, 0x3F, 0x19, 0x0C, 0x26, 0x3F, 0x00},   // U+007A (z)
+    [_]u8{ 0x38, 0x0C, 0x0C, 0x07, 0x0C, 0x0C, 0x38, 0x00},   // U+007B ({)
+    [_]u8{ 0x18, 0x18, 0x18, 0x00, 0x18, 0x18, 0x18, 0x00},   // U+007C (|)
+    [_]u8{ 0x07, 0x0C, 0x0C, 0x38, 0x0C, 0x0C, 0x07, 0x00},   // U+007D (})
+    [_]u8{ 0x6E, 0x3B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+007E (~)
+    [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},    // U+007F
+};
+
+const OutCtx = struct {
+    bitmap: *Bitmap,
+    outline: u32,
+    fg: u32,
+    x: u32,
+    y: u32,
+    size: u16,
+};
+
+fn out(ctx: OutCtx, comptime format: []const u8, args: anytype) void {
+    var scratch: [128]u8 = undefined;
+    var scratch16: [128]u16 = undefined;
+
+    const text = formatToU16(&scratch, &scratch16, format, args);
+    // _ = renderString(ctx.bitmap, ctx.x, ctx.y, ctx.bg, ctx.fg, ctx.size, text);
+    _ = renderStringOutline(ctx.bitmap, ctx.x, ctx.y, ctx.outline, ctx.fg, ctx.size, text);
+}
+
+fn time(st: *uefi.tables.SystemTable) f64 {
+    var t: uefi.Time = undefined;
+    _ = st.runtime_services.getTime(&t, null);
+    return timeToRelativeS(t);
+}
+
+const Params = struct {
+    system_table: *uefi.tables.SystemTable,
+    // out_ctx: OutCtx,
+    target_time_seconds: f64 = 10,
+};
+const Results = struct {
+    label: []const u8,
+    total_time: f64,
+    iters: usize,
+    time_pr_iter: f64,
+    iter_pr_second: f64,
+};
+pub fn runner(params: Params, comptime label: []const u8, func: anytype, args: anytype) Results {
+    const time_test_start = time(params.system_table);
+    var i: usize = 0;
+
+    while(true) : (i += 1) {
+        func(args);
+        const time_iter_end = time(params.system_table);
+
+        if(time_iter_end-time_test_start > params.target_time_seconds) {
+            break;
+        }
+    }
+
+    const time_test_end = time(params.system_table);
+    const total_time: f64 = time_test_end - time_test_start;
+
+    const time_pr_iter = @as(f64, @floatFromInt(i)) / total_time;
+    const iter_pr_second: f64 = total_time / @as(f64, @floatFromInt(i));
+
+    return . {
+        .label = label,
+        .total_time = total_time,
+        .iters = i,
+        .time_pr_iter = time_pr_iter,
+        .iter_pr_second = iter_pr_second
+    };
+}
