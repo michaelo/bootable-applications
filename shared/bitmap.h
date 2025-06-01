@@ -103,11 +103,11 @@ static void drawLine(int x0, int y0, int x1, int y1, Bitmap * target, Color_BGRA
     }
 }
 
-static void drawShadedLine(int x0, int y0, int z0, int x1, int y1, int z1, Bitmap * target, EFI_GRAPHICS_OUTPUT_BLT_PIXEL (*colorfunc)(float[3]))
+static void drawShadedLine(float p0[3], float p1[3], Bitmap * target, Bitmap * depth, EFI_GRAPHICS_OUTPUT_BLT_PIXEL (*colorfunc)(float[3]))
 {
-    int dx = x1 - x0;
-    int dy = y1 - y0;
-    int dz = z1 - z0;
+    int dx = p1[0] - p0[0];
+    int dy = p1[1] - p0[1];
+    int dz = p1[2] - p0[2];
     EFI_UINT32 xSteps = abs(dx);
     EFI_UINT32 ySteps = abs(dy);
     EFI_UINT32 numSteps = MAX(xSteps, ySteps);
@@ -116,17 +116,24 @@ static void drawShadedLine(int x0, int y0, int z0, int x1, int y1, int z1, Bitma
     float yIncrement = dy / numStepsF;
     float zIncrement = dz / numStepsF;
 
-    float xf = x0;
-    float yf = y0;
-    float zf = z0;
+    float xf = p0[0];
+    float yf = p0[1];
+    float zf = p0[2];
+    float * depthBuffer = (float*)depth->buffer;//abuse the fact that Color_BGRA is same size as float
     for (EFI_UINT32 step = 0; step <= numSteps; ++step)
     {
         float pos[3] = {xf,yf,zf};
         int x = round(xf);
         int y = round(yf);
 
-        if (x >= 0 && x < target->width && y >= 0 && y < target->height){
-            target->buffer[y * target->stride + x] = colorfunc(pos);
+        if (x >= 0 && x < target->width && y >= 0 && y < target->height){ //inside 2D bounds
+            int idx = y * target->stride + x;
+            //crude depth test
+            if (depthBuffer[idx] < zf) //if the current depth is less than the existing depth
+            {
+                depthBuffer[idx] = zf; //update the depth buffer
+                target->buffer[idx] = colorfunc(pos);
+            }
         }
         xf += xIncrement;
         yf += yIncrement;

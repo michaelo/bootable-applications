@@ -5,6 +5,12 @@
 
 typedef EFI_GRAPHICS_OUTPUT_BLT_PIXEL Color_BGRA;
 
+typedef union {
+    Color_BGRA asColor;
+    unsigned int asInt;
+    float asFloat;
+} Pixel;
+
 static Color_BGRA color(EFI_UINT32 r, EFI_UINT32 g, EFI_UINT32 b)
 {
     return (Color_BGRA) {.Blue = b, .Green = g, .Red = r, .Reserved = 255};

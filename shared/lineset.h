@@ -56,7 +56,7 @@ Lineset * createCuboid(float min[3], float max[3])
     return lineset;
 }
 
-void renderLineset(Lineset * lineset, Matrix4 matrix, Bitmap * target, EFI_GRAPHICS_OUTPUT_BLT_PIXEL (*colorfunc)(float[3]))
+void renderLineset(Lineset * lineset, Matrix4 matrix, Bitmap * target, Bitmap * depth, EFI_GRAPHICS_OUTPUT_BLT_PIXEL (*colorfunc)(float[3]))
 {
     float transformedVertices[lineset->numVertices * 3];
     for (int i = 0; i < lineset->numVertices; i++)
@@ -74,7 +74,7 @@ void renderLineset(Lineset * lineset, Matrix4 matrix, Bitmap * target, EFI_GRAPH
             float * p0 = &(transformedVertices[i0 * 3]);
             float * p1 = &(transformedVertices[i1 * 3]);
             
-            drawShadedLine(p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], target, colorfunc);
+            drawShadedLine(p0, p1, target, depth, colorfunc);
         }
         if (lineset->loop)
         {
@@ -83,7 +83,7 @@ void renderLineset(Lineset * lineset, Matrix4 matrix, Bitmap * target, EFI_GRAPH
             float * p0 = &(transformedVertices[i0 * 3]);
             float * p1 = &(transformedVertices[i1 * 3]);
 
-            drawShadedLine(p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], target, colorfunc);
+            drawShadedLine(p0, p1, target, depth, colorfunc);
         }
     }
 }
