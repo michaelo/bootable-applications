@@ -21,21 +21,23 @@ Lineset * loadTeapotData()
     return teapot_data;
 }
 
-void teapot(Bitmap * backBuffer, Lineset * teapot_data, float zdeg)
+void teapot(Bitmap * backBuffer, Bitmap * depthBuffer, Lineset * teapot_data, float zdeg)
 {
+    //clear backbuffer:
+    fillBitmap(backBuffer, color(0,0,0));
+    Pixel pixel = {.asFloat = -9999999999999999.0f};
+    fillBitmap(depthBuffer, pixel.asColor);
+
     float modelView[4][4];
     make_identity(modelView);
     float scaleFactor = backBuffer->width / 2;
     scale(modelView, scaleFactor, scaleFactor, scaleFactor);//scale it up so it more or less fills the viewport space
     rotateY(modelView, degToRad(zdeg));//rotate around the scene y axis
     rotateX(modelView, degToRad(-135));//rotate along the scene x axis
-    translate(modelView, backBuffer->width / 2, backBuffer->height * 0.6, 0);//move the object to be approx centered on the viewport
-    
-    //clear backbuffer:
-    fillBitmap(backBuffer, color(0,0,0));
+    translate(modelView, backBuffer->width / 2, backBuffer->height * 0.6, 0);//move the object to be approx centered on the viewport    
 
     // //render lines to backbuffer:
-    renderLineset(teapot_data, modelView, backBuffer, colorfunc);
+    renderLineset(teapot_data, modelView, backBuffer, depthBuffer, colorfunc);
 }
 
 // static int __chkstk = 0;
@@ -60,6 +62,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     Bitmap screen;
     initializeBitmapFromScreenBuffer(&screen, gfx_out_prot);
     Bitmap * backBuffer = allocateBitmap(screen.width, screen.height);
+    Bitmap * depthBuffer = allocateBitmap(screen.width, screen.height);
     Lineset * teapot_data = loadTeapotData();
 
     double t = 0;
@@ -73,7 +76,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     for (;;)
     {
         status = boot_services->WaitForEvent(1, &loopEvent, &index);
-        teapot(backBuffer, teapot_data, t);
+        teapot(backBuffer, depthBuffer, teapot_data, t);
         drawBitmapToScreen(gfx_out_prot, 0, 0, backBuffer);
 
         t += 0.2f;

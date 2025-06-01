@@ -48,9 +48,11 @@ Color_BGRA red(float point[3])
     return color(255,0,0);
 }
 
-void drawMap(Map * map, Bitmap * backBuffer, Bitmap ** sprites, int selected[3])
+void drawMap(Map * map, Bitmap * backBuffer, Bitmap * depthBuffer, Bitmap ** sprites, int selected[3])
 {
     fillBitmap(backBuffer, color(0,0,0));
+    Pixel pixel = {.asFloat = -9999999999999999.0f};
+    fillBitmap(depthBuffer, pixel.asColor);
 
     EFI_UINT32 dx = TILE_WIDTH / 2;
     EFI_UINT32 dy = dx / 2;
@@ -95,12 +97,12 @@ void drawMap(Map * map, Bitmap * backBuffer, Bitmap ** sprites, int selected[3])
     float min[3] = {0,0,bottomZ};
     float max[3] = {map->width,map->height,topZ};    
     Lineset * extents = createCuboid(min, max);
-    renderLineset(extents, mat, backBuffer, depthgreen);
+    renderLineset(extents, mat, backBuffer, depthBuffer, depthgreen);
 
     float minCell[3] = {selected[0], selected[1], (selected[2] - 1) * layerDepth};
     float maxCell[3] = {selected[0] + 1, selected[1] + 1, selected[2] * layerDepth};
     Lineset * cell = createCuboid(minCell, maxCell);
-    renderLineset(cell, mat, backBuffer, red);
+    renderLineset(cell, mat, backBuffer, depthBuffer, red);
 
     free(extents);
     free(cell);
@@ -189,13 +191,14 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     Bitmap screen;
     initializeBitmapFromScreenBuffer(&screen, gfx_out_prot);
     Bitmap * backBuffer = allocateBitmap(screen.width, screen.height);
+    Bitmap * depthBuffer = allocateBitmap(screen.width, screen.height);
 
     int selected[3] = {1,19,9};
     
     Map * map = createMap(20, 20);
     fillMap(map, 16); 
     
-    drawMap(map, backBuffer, tiles, selected);
+    drawMap(map, backBuffer, depthBuffer, tiles, selected);
     drawBitmapToScreen(gfx_out_prot, 0, 0, backBuffer);
     for (;;)
     {
@@ -231,7 +234,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
                 break;
         }
         if (!cont){
-            drawMap(map, backBuffer, tiles, selected);
+            drawMap(map, backBuffer, depthBuffer, tiles, selected);
             drawBitmapToScreen(gfx_out_prot, 0, 0, backBuffer);
         } 
         else switch (key.UnicodeChar)
@@ -239,7 +242,7 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
             case 'm':
                 fillScreen(gfx_out_prot, color(0,0,0));
                 fillMap(map, 16);
-                drawMap(map, backBuffer, tiles, selected);
+                drawMap(map, backBuffer, depthBuffer, tiles, selected);
                 drawBitmapToScreen(gfx_out_prot, 0, 0, backBuffer);      
                 break;
             default:              

@@ -62,7 +62,7 @@ static void * memset_unrolled(void * dst, EFI_UINT32 value, unsigned long long c
         dst32 += 1;
         count--;
     }
-    while (count >= 16) //handle aligned blocks of 8 uints
+    while (count >= 16) //handle aligned blocks of 16 uints
     {
         dst32[0] = value;
         dst32[1] = value;
