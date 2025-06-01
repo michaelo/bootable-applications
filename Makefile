@@ -33,6 +33,7 @@ build/$(DIR)/EFI/BOOT/BOOTX64.EFI: $(FILES) $(wildcard shared/*)
 	mkdir -p build/$(DIR)/EFI/BOOT/
 	cd build/$(DIR)/ ; $(CC) $(CCDEBUGFLAGS) $(CFLAGS) ../../$(BASEDIR)/$(DIR)/*.c
 	cd build/$(DIR)/ ; $(CC) -E $(CFLAGS) ../../$(BASEDIR)/$(DIR)/*.c > $(DIR).o.e
+	cd build/$(DIR)/ ; $(CC) -c -S $(CFLAGS) ../../$(BASEDIR)/$(DIR)/*.c
 	cd build/$(DIR)/ ; $(CL) $(CLFLAGS) -out:EFI/BOOT/release.BOOTX64.EFI *.o
 ifeq (${DEBUG}, 1)
 	cd build/$(DIR)/ ; $(CL) $(CLFLAGS) $(CLDEBUGFLAGS) -out:EFI/BOOT/debug.BOOTX64.EFI *.o
