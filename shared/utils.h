@@ -3,6 +3,10 @@
 
 #include "lil_uefi/lil_uefi.h"
 
+
+#include "shared/text.h"
+#include "shared/efi_status.h"
+
 typedef enum
 {
     Text,
@@ -68,13 +72,41 @@ static EFI_GRAPHICS_OUTPUT_PROTOCOL *SetModeGraphics(EFI_SYSTEM_TABLE *system_ta
     return out_prot;
 }
 
-static EFI_UINTN uclamp(EFI_UINTN value, EFI_UINTN low, EFI_UINTN high)
+static EFI_GRAPHICS_OUTPUT_PROTOCOL *GetModeGraphicsAdv(EFI_SYSTEM_TABLE *system_table, EFI_HANDLE handle)
 {
-    if (value < low)
-        value = low;
-    if (value > high)
-        value = high;
-    return value;
+    EFI_CHAR16 scratch[64];
+    EFI_GRAPHICS_OUTPUT_PROTOCOL *out_prot;
+
+    EFI_GUID out_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
+    EFI_STATUS status = system_table->BootServices->OpenProtocol(
+        handle,
+        &out_guid,
+        (void **)&out_prot,
+        NULL,
+        NULL,
+        EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL);
+
+    if (status != 0)
+    {
+        // FormatterZ(scratch, 64, L"error: %X - %s", status, efi_error_str(status));
+        // ConsoleWrite(system_table->ConOut, 0, 0, scratch);
+
+        return NULL;
+    }
+
+    return out_prot;
+}
+
+static EFI_GRAPHICS_OUTPUT_PROTOCOL *SetModeGraphicsAdv(EFI_SYSTEM_TABLE *system_table, EFI_HANDLE handle, EFI_UINT32 num)
+{
+    EFI_GRAPHICS_OUTPUT_PROTOCOL *out_prot = GetModeGraphicsAdv(system_table, handle);
+
+    if (out_prot == 0)
+        return 0;
+    if (out_prot->SetMode(out_prot, num) != 0)
+        return 0;
+
+    return out_prot;
 }
 
 static void BlockForKey(EFI_SYSTEM_TABLE *system_table, EFI_UINT16 keychar)

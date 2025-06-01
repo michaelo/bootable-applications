@@ -12,12 +12,6 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
     EFI_UINTN event;
     EFI_INPUT_KEY key;
 
-    // Set text mode: list all resolutions and prompt user for number
-    EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *text = SetModeText(system_table, 0);
-
-    EFI_UINTN mode_num = 0;
-    SetModeGraphics(system_table, mode_num);
-    EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx = GetModeGraphics(system_table);
     EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *gfx_info;
     EFI_UINTN gfx_info_size;
 
@@ -27,16 +21,37 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg = color(255, 255, 255);
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL bg = colorTransparent();
 
+    // Get all handles supporting protocol
+    EFI_GUID gfxout_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
+    EFI_HANDLE *gfxout_handle_buf = NULL;
+    EFI_UINTN num_gfxout_handles = 0;
+    system_table->BootServices->LocateHandleBuffer(EFI_LOCATE_SEARCH_TYPE_ByProtocol, &gfxout_guid, NULL, &num_gfxout_handles, &gfxout_handle_buf);
+    // ...
+
     int alive = 1;
     Bitmap screen;
+
+    // Set initial state
+    EFI_UINTN handle_idx = 0;
+    EFI_UINTN mode_num = 0;
+    SetModeGraphicsAdv(system_table, gfxout_handle_buf[handle_idx], mode_num);
+    EFI_GRAPHICS_OUTPUT_PROTOCOL *gfx;
 
     EFI_UINTN font_size = 8;
     while (alive)
     {
-        EFI_UINTN xMargin = 50;
-        EFI_UINTN y = 50;
+        EFI_UINTN xMargin = 20;
+        EFI_UINTN y = 20;
         EFI_UINTN line_height = font_size * 1.5;
 
+        // Read settings for current graphics mode
+        gfx = GetModeGraphicsAdv(system_table, gfxout_handle_buf[handle_idx]);
+        if(gfx == NULL) {
+            // ERROR!
+            return;
+        }
+
+        // Prepare drawing to screen buffer for current handle and mode
         initializeBitmapFromScreenBuffer(&screen, gfx);
         fillScreen(gfx, color(0,0,0));
         drawRectangleToScreen(gfx, 0, 0, 640, 480, color(128,0,128));
@@ -49,11 +64,13 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
 
         y += line_height;
         y += line_height;
-        renderStringF(&screen, xMargin, y, bg, fg, font_size, scrap, sizeof(scrap), L"Current resolution: %d x %d (mode: %d/%d)", gfx_info->HorizontalResolution, gfx_info->VerticalResolution, mode_num+1, gfx->Mode->max_mode);
+        renderStringF(&screen, xMargin, y, bg, fg, font_size, scrap, sizeof(scrap),
+            L"Current resolution: %d x %d (handle: %d/%d, mode: %d/%d)",
+            gfx_info->HorizontalResolution, gfx_info->VerticalResolution, handle_idx+1, num_gfxout_handles, mode_num+1, gfx->Mode->max_mode);
 
         y += line_height;
         y += line_height;
-        renderString(&screen, xMargin, y, bg, fg, font_size, L"Press Left/Right to iterate. Press Enter when happy.");
+        renderString(&screen, xMargin, y, bg, fg, font_size, L"Left/Right to change mode, Up/Down to change handle. Enter when happy.");
 
         // Wait for response
         system_table->BootServices->WaitForEvent(1, &system_table->ConIn->WaitForKey, &event);
@@ -63,6 +80,7 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
 
         switch (key.ScanCode)
         {
+            // Iterative over mode
         case EFI_SCAN_Left:
             if (mode_num > 0)
                 mode_num -= 1;
@@ -71,13 +89,18 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
             if (mode_num < gfx->Mode->max_mode - 1)
                 mode_num += 1;
             break;
+            // TODO: Iterate over protocol
         case EFI_SCAN_Down:
-            if (font_size > 0)
-                font_size -= 1;
+            if(handle_idx > 0) {
+                handle_idx -= 1;
+                mode_num = 0;
+            }
             break;
         case EFI_SCAN_Up:
-            if (font_size < 64)
-                font_size += 1;
+            if(handle_idx < num_gfxout_handles -1) {
+                handle_idx += 1;
+                mode_num = 0;
+            }
             break;
         default:
             switch (key.UnicodeChar)
@@ -91,7 +114,7 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
             break;
         };
 
-        SetModeGraphics(system_table, mode_num);
+        gfx = SetModeGraphicsAdv(system_table, gfxout_handle_buf[handle_idx], mode_num);
     }
 }
 
