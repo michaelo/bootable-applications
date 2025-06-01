@@ -67,14 +67,6 @@ test "vectorFill" {
     try std.testing.expectEqualSlices(u32, &[_]u32{1, 1, 1, 1, 1}, data[0..]);
 }
 
-fn timeToRelativeS(t: uefi.Time) f64 {
-    return
-        @as(f64, @floatFromInt(t.hour)) * 60 * 60 +
-        @as(f64, @floatFromInt(t.minute)) * 60 +
-        @as(f64, @floatFromInt(t.second)) +
-        @as(f64, @floatFromInt(t.nanosecond))/1000_000_1000;
-}
-
 // Entry point. Zig handles assignment of system_table and uefi handle to uefi.system_table and uefi.handle respectively.
 pub fn main() usize {
     const con_out = uefi.system_table.con_out.?;
@@ -127,7 +119,7 @@ pub fn main() usize {
     // TODO: is the system table globally accessible? If so, remove from params
     const test_params: Params = .{
         .system_table = uefi.system_table,
-        .target_time_seconds = 4,
+        .target_time_seconds = 10,
     };
     var out_ctx: OutCtx = .{
         .bitmap = &screen,
@@ -411,15 +403,22 @@ fn out(ctx: OutCtx, comptime format: []const u8, args: anytype) void {
     _ = renderStringOutline(ctx.bitmap, ctx.x, ctx.y, ctx.outline, ctx.fg, ctx.size, text);
 }
 
-fn time(st: *uefi.tables.SystemTable) f64 {
-    var t: uefi.Time = undefined;
-    _ = st.runtime_services.getTime(&t, null);
-    return timeToRelativeS(t);
-}
+// fn timeToRelativeS(t: uefi.Time) f64 {
+//     return
+//         @as(f64, @floatFromInt(t.hour)) * 60 * 60 +
+//         @as(f64, @floatFromInt(t.minute)) * 60 +
+//         @as(f64, @floatFromInt(t.second)) +
+//         @as(f64, @floatFromInt(t.nanosecond))/1000_000_1000;
+// }
+
+// fn time(st: *uefi.tables.SystemTable) f64 {
+//     var t: uefi.Time = undefined;
+//     _ = st.runtime_services.getTime(&t, null);
+//     return timeToRelativeS(t);
+// }
 
 const Params = struct {
     system_table: *uefi.tables.SystemTable,
-    // out_ctx: OutCtx,
     target_time_seconds: f64 = 10,
 };
 const Results = struct {
@@ -430,27 +429,36 @@ const Results = struct {
     iter_pr_second: f64,
 };
 pub fn runner(params: Params, comptime label: []const u8, func: anytype, args: anytype) Results {
-    const time_test_start = time(params.system_table);
+    const second = 10_000_000;
+    var timer_event: uefi.Event = undefined;
+    var timer_status: uefi.Status = uefi.Status.NotStarted; // != 0
+    var boot_services = params.system_table.boot_services.?;
+
+    _ = boot_services.createEvent(
+        uefi.tables.BootServices.event_timer,
+        uefi.tables.BootServices.tpl_callback,
+        null,
+        null,
+        &timer_event);
+    _ = boot_services.setTimer(
+        timer_event,
+        uefi.tables.TimerDelay.TimerRelative,
+        @intFromFloat(second*params.target_time_seconds));
+
     var i: usize = 0;
 
-    while(true) : (i += 1) {
+    while(timer_status != uefi.Status.Success) : (i += 1) {
+        timer_status = boot_services.checkEvent(timer_event);
         func(args);
-        const time_iter_end = time(params.system_table);
-
-        if(time_iter_end-time_test_start > params.target_time_seconds) {
-            break;
-        }
     }
 
-    const time_test_end = time(params.system_table);
-    const total_time: f64 = time_test_end - time_test_start;
-
-    const time_pr_iter = @as(f64, @floatFromInt(i)) / total_time;
-    const iter_pr_second: f64 = total_time / @as(f64, @floatFromInt(i));
+    const time_pr_iter = @as(f64, @floatFromInt(i)) / params.target_time_seconds;
+    const iter_pr_second: f64 = params.target_time_seconds / @as(f64, @floatFromInt(i));
 
     return . {
         .label = label,
-        .total_time = total_time,
+        // .total_time = total_time,
+        .total_time = params.target_time_seconds,
         .iters = i,
         .time_pr_iter = time_pr_iter,
         .iter_pr_second = iter_pr_second
