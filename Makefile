@@ -16,7 +16,7 @@ DEBUG=0
 
 BASEDIR=examples
 CC=clang
-CFLAGS=-Werror -I../.. -I. -DLIL_UEFI_DISABLE_INTEGER_SIZE_CHECKS -c -target x86_64-pc-win32-coff
+CFLAGS=-Werror -O3 -I../.. -I. -DLIL_UEFI_DISABLE_INTEGER_SIZE_CHECKS -c -target x86_64-pc-win32-coff -mno-stack-arg-probe -fno-builtin-memset
 CL=lld-link
 CLFLAGS=-entry:EfiMain -subsystem:efi_application
 
