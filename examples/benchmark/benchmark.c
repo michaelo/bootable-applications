@@ -5,6 +5,7 @@
 #include "shared/hsv.h"
 #include "shared/memory.h"
 #include "shared/text.h"
+#include "shared/screen_selectres.h"
 
 #define SCRATCH_SIZE 1024
 #define NAME_SIZE 60
@@ -160,17 +161,12 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     efi_initialize_global_state(system_table);
     useFloatingPointMath();
 
-    EFI_BOOT_SERVICES *boot_services = system_table->BootServices;
-    EFI_STATUS status;
-
+    // Prevent automatic 5min abort
     system_table->BootServices->SetWatchdogTimer(0, 0, 0, NULL);
 
-    EFI_GUID gfx_out_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
-
-    boot_services->LocateProtocol(&gfx_out_guid, 0, (void **)&gfx_out);
-
-    gfx_out->SetMode(gfx_out, 0);
-
+    gfx_out = GetModeGraphics(system_table);
+    SelectResolution(system_table);
+    
     initializeBitmapFromScreenBuffer(&screen, gfx_out);    
     backBuffer = allocateBitmap(screen.stride, screen.height);
     backBuffer->width = screen.width;
