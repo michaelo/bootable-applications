@@ -194,20 +194,20 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     };
 
     Benchmark benchmarks[] = {
-        // createBenchmark(L"FillScreenNaive", fillScreenNaive, &pink),
-        // createBenchmark(L"FillScreenMemSet", fillScreenMemset, &white),
-        // createBenchmark(L"FillScreenBlt", fillScreenBlt, &orange),
-        // createBenchmark(L"FillBitmapNaive", fillBitmapNaive, &green),
-        // createBenchmark(L"FillBitmapMemSet", fillBitmapMemset, &white),
-        // createBenchmark(L"FillBitmapMemSetUnrolled", fillBitmapMemsetUnrolled, &blue),
-        // createBenchmark(L"FillBitmapMemSetVector", fillBitmapMemsetVector, &red),
+        createBenchmark(L"FillScreenNaive", fillScreenNaive, &pink),
+        createBenchmark(L"FillScreenMemSet", fillScreenMemset, &white),
+        createBenchmark(L"FillScreenBlt", fillScreenBlt, &orange),
+        createBenchmark(L"FillBitmapNaive", fillBitmapNaive, &green),
+        createBenchmark(L"FillBitmapMemSet", fillBitmapMemset, &white),
+        createBenchmark(L"FillBitmapMemSetUnrolled", fillBitmapMemsetUnrolled, &blue),
+        createBenchmark(L"FillBitmapMemSetVector", fillBitmapMemsetVector, &red),
         createBenchmark(L"FillBitmapMemSetVectorArray", fillBitmapMemsetVectorArray, colors),
-        // createBenchmark(L"BitmapScreenMemcpy", bitmapScreenMemcpy, 0),
+        createBenchmark(L"BitmapScreenMemcpy", bitmapScreenMemcpy, 0),
         createBenchmark(L"BitmapScreenBlt", bitmapScreenBlt, 0),
-        // createBenchmark(L"CalcSin", calcSin, 0),
-        // createBenchmark(L"CalcCos", calcCos, 0),
-        // createBenchmark(L"CalcTan", calcTan, 0),
-        // createBenchmark(L"CalcSqrt", calcSqrt, 0)
+        createBenchmark(L"CalcSin", calcSin, 0),
+        createBenchmark(L"CalcCos", calcCos, 0),
+        createBenchmark(L"CalcTan", calcTan, 0),
+        createBenchmark(L"CalcSqrt", calcSqrt, 0)
     };
 
     int numBenchmarks = sizeof(benchmarks) / sizeof(Benchmark);
