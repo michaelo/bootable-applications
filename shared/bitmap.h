@@ -5,21 +5,34 @@
 #include "shared/color.h"
 #include "shared/memory.h"
 
+#include <stdalign.h>
+
+#pragma pack(push, 16) //Make sure the total struct size is 16-byte aligned 
 typedef struct Bitmap {
-    EFI_UINT32 width;
-    EFI_UINT32 height;
-    EFI_UINT32 stride;
-    Color_BGRA * buffer;
+    EFI_UINT32 width;     //4
+    EFI_UINT32 height;    //4
+    EFI_UINT32 stride;    //4
+    char buffer_offset;   //1
+    Color_BGRA * buffer;  //8
 } Bitmap;
+#pragma pack(pop)
 
 static Bitmap * allocateBitmap(EFI_UINT32 width, EFI_UINT32 height)
 {
-    Bitmap * bitmap = (Bitmap*) malloc(sizeof(Bitmap) + sizeof(Color_BGRA) * width * height);
+    unsigned char offset;
+    Bitmap * bitmap = (Bitmap*) malloc_aligned(sizeof(Bitmap) + sizeof(Color_BGRA) * width * height, 16, &offset); //Make sure the struct starts at a 16-byte aligned address
     bitmap->width = width;
     bitmap->height = height;
     bitmap->stride = width;
-    bitmap->buffer = (Color_BGRA *) (&(bitmap->buffer) + sizeof(Color_BGRA *));
+    bitmap->buffer_offset = offset; //Store the offset for freeing later
+    bitmap->buffer = (Color_BGRA *) ((char*)bitmap) + sizeof(Bitmap);//The buffer should be right after the Bitmap struct in memory, and thus be 16-byte aligned
     return bitmap;
+}
+
+static void freeBitmap(Bitmap * bitmap)
+{
+    if (bitmap == 0) return;
+    free_aligned(bitmap, bitmap->buffer_offset); //Free the memory using the stored offset
 }
 
 static Bitmap * initializeBitmapFromBuffer(Bitmap * bitmap, EFI_UINT32 width, EFI_UINT32 height, EFI_UINT32 stride, const unsigned int * buffer)
@@ -102,6 +115,8 @@ static void drawLine(int x0, int y0, int x1, int y1, Bitmap * target, Color_BGRA
         yf += yIncrement;
     }
 }
+
+
 
 static void drawShadedLine(float p0[3], float p1[3], Bitmap * target, Bitmap * depth, EFI_GRAPHICS_OUTPUT_BLT_PIXEL (*colorfunc)(float[3]))
 {

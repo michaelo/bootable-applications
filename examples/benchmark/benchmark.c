@@ -135,6 +135,12 @@ void fillBitmapMemsetVector(void * state)
     memset_vector(backBuffer->buffer, *(int*)state, screen.stride * screen.height);
 }
 
+void fillBitmapMemsetVectorArray(void * state)
+{
+    memset_vector_array(backBuffer->buffer, (unsigned int*)state, screen.stride * screen.height);
+}
+
+
 void calcSin(void * state)
 {
     sin(0.5f); // Just a dummy operation to test performance
@@ -179,21 +185,29 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
 
     EFI_UINTN keyEvent;
     EFI_INPUT_KEY key;
+    
+    Color_BGRA colors[] = {
+        red,
+        blue,
+        orange,
+        green,
+    };
 
     Benchmark benchmarks[] = {
-        createBenchmark(L"FillScreenNaive", fillScreenNaive, &pink),
-        createBenchmark(L"FillScreenMemSet", fillScreenMemset, &white),
-        createBenchmark(L"FillScreenBlt", fillScreenBlt, &orange),
-        createBenchmark(L"FillBitmapNaive", fillBitmapNaive, &green),
-        createBenchmark(L"FillBitmapMemSet", fillBitmapMemset, &white),
-        createBenchmark(L"FillBitmapMemSetUnrolled", fillBitmapMemsetUnrolled, &blue),
-        createBenchmark(L"FillBitmapMemSetVector", fillBitmapMemsetVector, &red),
-        createBenchmark(L"BitmapScreenMemcpy", bitmapScreenMemcpy, 0),
+        // createBenchmark(L"FillScreenNaive", fillScreenNaive, &pink),
+        // createBenchmark(L"FillScreenMemSet", fillScreenMemset, &white),
+        // createBenchmark(L"FillScreenBlt", fillScreenBlt, &orange),
+        // createBenchmark(L"FillBitmapNaive", fillBitmapNaive, &green),
+        // createBenchmark(L"FillBitmapMemSet", fillBitmapMemset, &white),
+        // createBenchmark(L"FillBitmapMemSetUnrolled", fillBitmapMemsetUnrolled, &blue),
+        // createBenchmark(L"FillBitmapMemSetVector", fillBitmapMemsetVector, &red),
+        createBenchmark(L"FillBitmapMemSetVectorArray", fillBitmapMemsetVectorArray, colors),
+        // createBenchmark(L"BitmapScreenMemcpy", bitmapScreenMemcpy, 0),
         createBenchmark(L"BitmapScreenBlt", bitmapScreenBlt, 0),
-        createBenchmark(L"CalcSin", calcSin, 0),
-        createBenchmark(L"CalcCos", calcCos, 0),
-        createBenchmark(L"CalcTan", calcTan, 0),
-        createBenchmark(L"CalcSqrt", calcSqrt, 0)
+        // createBenchmark(L"CalcSin", calcSin, 0),
+        // createBenchmark(L"CalcCos", calcCos, 0),
+        // createBenchmark(L"CalcTan", calcTan, 0),
+        // createBenchmark(L"CalcSqrt", calcSqrt, 0)
     };
 
     int numBenchmarks = sizeof(benchmarks) / sizeof(Benchmark);
