@@ -245,8 +245,7 @@ static EFI_UINT64 renderStringOutline(Bitmap *bitmap, int dx, int dy, Color_BGRA
 static EFI_UINTN StrLen(const EFI_UINT16 *str)
 {
     EFI_UINTN len = 0;
-    while (str[++len] != 0)
-        ;
+    while (str[len] != 0) len++;
     return len;
 }
 
@@ -325,9 +324,9 @@ static EFI_UINTN FormatterVZ(EFI_UINT16 *out, EFI_UINTN cap, const EFI_UINT16 *f
                         if (out_idx < cap)
                         {
                             out[out_idx] = buf_value[i];
+                            out_idx += 1;
                         }
 
-                        out_idx += 1;
                     }
 
                     format_idx += 1;
@@ -349,9 +348,9 @@ static EFI_UINTN FormatterVZ(EFI_UINT16 *out, EFI_UINTN cap, const EFI_UINT16 *f
                         if (out_idx < cap)
                         {
                             out[out_idx] = scratch[i];
+                            out_idx += 1;
                         }
 
-                        out_idx += 1;
                     }
 
                     format_idx += 1;
@@ -375,9 +374,9 @@ static EFI_UINTN FormatterVZ(EFI_UINT16 *out, EFI_UINTN cap, const EFI_UINT16 *f
                         if (out_idx < cap)
                         {
                             out[out_idx] = scratch[i];
+                            out_idx += 1;
                         }
 
-                        out_idx += 1;
                     }
 
                     format_idx += 1;
