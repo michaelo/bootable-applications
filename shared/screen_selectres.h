@@ -15,7 +15,8 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
     EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *gfx_info;
     EFI_UINTN gfx_info_size;
 
-    EFI_UINT16 scrap[128];
+    #define SCRAP_SIZE 128
+    EFI_UINT16 scrap[SCRAP_SIZE];
     EFI_UINTN len = 0;
 
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL fg = color(255, 255, 255);
@@ -58,13 +59,13 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
 
         // Write current resolution + help commands
         int x = xMargin;
-        renderStringF(&screen, x, y, bg, fg, font_size, scrap, sizeof(scrap), L"--- Select resolution (ref-box is 640*480) ---");
+        renderStringF(&screen, x, y, bg, fg, font_size, scrap, SCRAP_SIZE, L"--- Select resolution (ref-box is 640*480) ---");
         
         gfx->QueryMode(gfx, mode_num, &gfx_info_size, &gfx_info);
 
         y += line_height;
         y += line_height;
-        renderStringF(&screen, xMargin, y, bg, fg, font_size, scrap, sizeof(scrap),
+        renderStringF(&screen, xMargin, y, bg, fg, font_size, scrap, SCRAP_SIZE,
             L"Current resolution: %d x %d (handle: %d/%d, mode: %d/%d)",
             gfx_info->HorizontalResolution, gfx_info->VerticalResolution, handle_idx+1, num_gfxout_handles, mode_num+1, gfx->Mode->max_mode);
 

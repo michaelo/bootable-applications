@@ -11,14 +11,14 @@
 #define NAME_SIZE 60
 
 typedef struct Benchmark_s {
-    short name[NAME_SIZE];
+    EFI_UINT16 name[NAME_SIZE];
     float timeSeconds;
     int num;
     void (*target)(void *);
     void * state;
 } Benchmark;
 
-Benchmark createBenchmark(unsigned short name[], void (*target)(void *), void * state)
+Benchmark createBenchmark(EFI_UINT16 name[], void (*target)(void *), void * state)
 {
     Benchmark benchmark = {
         .timeSeconds = 1,
@@ -26,7 +26,10 @@ Benchmark createBenchmark(unsigned short name[], void (*target)(void *), void * 
         .target = target,
         .state = state
     };
-    memcpy(benchmark.name, name, NAME_SIZE);
+    EFI_UINTN name_length = StrLen(name);
+    EFI_UINTN truncated_length = MIN(name_length, NAME_SIZE - 1);
+    memcpy(benchmark.name, name, truncated_length * sizeof(EFI_UINT16));
+    benchmark.name[truncated_length] = 0; // Ensure null termination
     return benchmark;
 }
 
@@ -122,24 +125,23 @@ void fillBitmapNaive(void * state)
 
 void fillBitmapMemset(void * state)
 {
-    memset(backBuffer->buffer, *(int*)state, screen.stride * screen.height * 4);
+    memset(backBuffer->buffer, *(int*)state, backBuffer->stride * backBuffer->height * 4);
 }
 
 void fillBitmapMemsetUnrolled(void * state)
 {
-    memset_unrolled(backBuffer->buffer, *(int*)state, screen.stride * screen.height);
+    memset_unrolled(backBuffer->buffer, *(int*)state, backBuffer->stride * backBuffer->height);
 }
 
 void fillBitmapMemsetVector(void * state)
 {
-    memset_vector(backBuffer->buffer, *(int*)state, screen.stride * screen.height);
+    memset_vector(backBuffer->buffer, *(int*)state, backBuffer->stride * backBuffer->height);
 }
 
 void fillBitmapMemsetVectorArray(void * state)
 {
-    memset_vector_array(backBuffer->buffer, (unsigned int*)state, screen.stride * screen.height);
+    memset_vector_array(backBuffer->buffer, (unsigned int*)state, backBuffer->stride * backBuffer->height);
 }
-
 
 void calcSin(void * state)
 {

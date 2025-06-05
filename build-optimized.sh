@@ -24,6 +24,6 @@ clang $ENTRY_FILE -I. -c -Os -flto -target x86_64-pc-win32-coff -fno-builtin-mem
 log Link object file to PE32+ executable: build/$BASENAMENOEXT/EFI/BOOT/BOOTX64.EFI
 lld-link -entry:EfiMain -subsystem:efi_application -out:build/$BASENAMENOEXT/EFI/BOOT/BOOTX64.EFI build/$BASENAMENOEXT.o 
 
-upx -9 build/$BASENAMENOEXT/EFI/BOOT/BOOTX64.EFI
+# upx -9 build/$BASENAMENOEXT/EFI/BOOT/BOOTX64.EFI
 
 log Finished.
