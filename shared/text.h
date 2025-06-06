@@ -337,7 +337,7 @@ static EFI_UINTN FormatterVZ(EFI_UINT16 *out, EFI_UINTN cap, const EFI_UINT16 *f
             case 'd':
                 // va_arg as int decimal
                 {
-                    EFI_INTN int_value = va_arg(args, EFI_INTN);
+                    EFI_INT32 int_value = va_arg(args, EFI_INT32);
                     int int_len = FormatInt(scratch, scratch_size, int_value, 10);
 
                     // Copy formatted int to output
