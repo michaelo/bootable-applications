@@ -59,7 +59,7 @@ static void SelectResolution(EFI_SYSTEM_TABLE *system_table)
 
         // Write current resolution + help commands
         int x = xMargin;
-        renderStringF(&screen, x, y, bg, fg, font_size, scrap, SCRAP_SIZE, L"--- Select resolution (ref-box is 640*480) ---");
+        renderString(&screen, x, y, bg, fg, font_size, L"--- Select resolution (ref-box is 640*480) ---");
         
         gfx->QueryMode(gfx, mode_num, &gfx_info_size, &gfx_info);
 
