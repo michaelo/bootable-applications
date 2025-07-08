@@ -2,7 +2,8 @@
 #include "component.h"
 #include "entity.h"
 
-void initializeEcs()
+void initializeEcs(ECS * ecs)
 {
-    initializeComponents();
+    initializeEntities(ecs);
+    initializeComponents(ecs);
 }
