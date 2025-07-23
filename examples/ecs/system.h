@@ -1,7 +1,7 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 
-#include "ecs.h"
+#include "ecs_base.h"
 
 void parentSystem(ECS * ecs);
 void physicsSystem(ECS * ecs);

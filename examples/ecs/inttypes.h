@@ -1,6 +1,8 @@
 #ifndef INT_TYPES_H
 #define INT_TYPES_H
 
+#include <stddef.h>
+
 typedef char               int8_t;
 typedef short              int16_t;
 typedef int                int32_t;
@@ -10,7 +12,6 @@ typedef unsigned short     uint16_t;
 typedef unsigned int       uint32_t;
 typedef unsigned long long uint64_t;
 typedef unsigned long long size_t;
-#define NULL ((void *)0)
 
 #define UINT64_MAX ((uint64_t)-1)
 #define UINT32_MAX ((uint32_t)-1)

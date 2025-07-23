@@ -4,6 +4,8 @@
 #include "shared/math.h"
 #include "shared/memory.h"
 #include "shared/text.h"
+
+#include "ecs.h"
 #include "component.h"
 #include "entity.h"
 
@@ -13,14 +15,18 @@ EFI_UINTN EfiMain(EFI_HANDLE handle, EFI_SYSTEM_TABLE *system_table)
     efi_initialize_global_state(system_table);
     useFloatingPointMath();
 
-    Entity particle = createEntity(); // Example entity
-    addComponentToEntity(&particle, COMPONENT_TYPE_POSITION); 
-    addComponentToEntity(&particle, COMPONENT_TYPE_VELOCITY);
+    ECS ecs;
+    initializeEcs(&ecs);
 
-    Entity model = createEntity(); // Another example entity
-    addComponentToEntity(&model, COMPONENT_TYPE_POSITION);
-    addComponentToEntity(&model, COMPONENT_TYPE_ROTATION);
-    addComponentToEntity(&model, COMPONENT_TYPE_SCALE);
+
+    Entity * particle = createEntity(&ecs, L"particle", COMPONENT_POSITION | COMPONENT_VELOCITY, DefaultState); // Example entity
+    ecs.componentData.position[particle->id] = (Position){.x = 10, .y = 20, .z = 0, .w = 1};
+    ecs.componentData.velocity[particle->id] = (Velocity){.vx = 1, .vy = 2, .vz = 0, .vw = 1};
+    
+    Entity * model = createEntity(&ecs, L"model", COMPONENT_POSITION | COMPONENT_ROTATION | COMPONENT_SCALE, DefaultState); // Example entity
+    ecs.componentData.position[model->id] = (Position){.x = 50, .y = 50, .z = 0, .w = 1};
+    ecs.componentData.rotation[model->id] = (Rotation){0};
+    ecs.componentData.scale[model->id] = (Scale){.sx = 1, .sy = 1, .sz = 1, .sw = 1};
 
     EFI_BOOT_SERVICES *boot_services = system_table->BootServices;
     EFI_STATUS status;

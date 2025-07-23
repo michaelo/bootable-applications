@@ -1,10 +1,8 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
-#include "inttypes.h"
-#include "ecs.h"
+#include "ecs_base.h"
 
-typedef uint64_t EntityId; // Type for entity IDs
 typedef uint64_t ComponentFlags; // Type for component IDs
 
 typedef enum {
@@ -14,6 +12,8 @@ typedef enum {
     ENTITY_DELETED       = 1ULL << 3, // Entity is marked for deletion
     ENTITY_LAST_POSSIBLE = 1ULL << 63 // Last possible flag value
 } EntityStateFlags;
+
+static const EntityStateFlags DefaultState = ENTITY_ACTIVE | ENTITY_ALIVE | ENTITY_VISIBLE;
 
 typedef struct {
     EntityId id; // Unique identifier for the entity
@@ -29,6 +29,6 @@ typedef struct {
 } EntityData;
 
 void initializeEntities(ECS * ecs);
-Entity * createEntity(ECS * ecs, uint16_t * name, ComponentFlags components);
+Entity * createEntity(ECS * ecs, uint16_t *name, ComponentFlags components, EntityStateFlags stateFlags);
 
 #endif // ENTITY_H

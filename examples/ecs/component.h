@@ -1,23 +1,26 @@
 #ifndef COMPONENT_H
 #define COMPONENT_H
 
+#include "ecs_base.h"
+
 #define NUM_COMPONENTS 4
 #define MAX_COMPONENTS 64
 
 typedef enum {
     COMPONENT_PARENT         = 1ULL << 0,
     COMPONENT_CHILDREN       = 1ULL << 1,
-    COMPONENT_TRANSLATION    = 1ULL << 2,
+    COMPONENT_POSITION       = 1ULL << 2,
     COMPONENT_ROTATION       = 1ULL << 3,
     COMPONENT_SCALE          = 1ULL << 4,
     COMPONENT_LOCAL_TO_WORLD = 1ULL << 5,
-    COMPONENT_VELOCITY       = 1ULL << 5,
-    COMPONENT_ACCELERATION   = 1ULL << 6,
-    COMPONENT_LAST_POSSIBLE  = 1ULL << 63
+    COMPONENT_VELOCITY       = 1ULL << 6,
+    // COMPONENT_LAST           = 1ULL << 7,
+    // COMPONENT_LAST_POSSIBLE  = 1ULL << 63
 } ComponentType;
 
 typedef struct {
-    EntityId parentEntity;
+    EntityId parent;
+    EntityId previousParent;
 } Parent;
 
 typedef struct {
@@ -47,6 +50,10 @@ typedef struct {
 } Scale;
 
 typedef struct {
+    float matrix[4][4];
+} LocalToWorld;
+
+typedef struct {
     float vx;
     float vy;
     float vz;
@@ -59,6 +66,7 @@ typedef struct {
     Position * position;
     Rotation * rotation;
     Scale * scale;
+    LocalToWorld * localToWorld;
     Velocity * velocity;
 } ComponentData;
 
