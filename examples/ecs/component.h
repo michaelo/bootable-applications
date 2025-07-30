@@ -2,6 +2,7 @@
 #define COMPONENT_H
 
 #include "ecs_base.h"
+#include "linkedlist.h"
 
 #define NUM_COMPONENTS 4
 #define MAX_COMPONENTS 64
@@ -24,8 +25,7 @@ typedef struct {
 } Parent;
 
 typedef struct {
-    EntityId * children; // Array of child entity IDs
-    size_t count; // Number of children
+    List childrenList;
 } Children;
 
 typedef struct {
