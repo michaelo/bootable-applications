@@ -1,3 +1,6 @@
+#ifndef EFI_STATUS_H
+#define EFI_STATUS_H
+
 // https://uefi.org/specs/UEFI/2.10/Apx_D_Status_Codes.html
 #include "lil_uefi/lil_uefi.h"
 
@@ -158,3 +161,5 @@ EFI_CHAR16 *efi_status_str(EFI_STATUS status)
     }
     return 0;
 }
+
+#endif

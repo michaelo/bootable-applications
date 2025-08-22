@@ -2,17 +2,11 @@
 #define EFI_GLOBAL_STATE_H
 #include "lil_uefi/lil_uefi.h"
 
-static EFI_SYSTEM_TABLE * efi_global_system_table = 0;
+void efi_initialize_global_state(EFI_SYSTEM_TABLE * system_table);
+EFI_BOOT_SERVICES * efi_boot_services();
+EFI_SYSTEM_TABLE * efi_system_table();
+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL * efi_con_out();
 
-static void efi_initialize_global_state(EFI_SYSTEM_TABLE * system_table)
-{
-    efi_global_system_table = system_table;
-}
-
-static EFI_BOOT_SERVICES * efi_boot_services()
-{
-    if (efi_global_system_table == 0) return 0;
-    return efi_global_system_table->BootServices;
-}
-
+void uefi_println(EFI_UINT16 * format, ...);
+void uefi_clear_console();
 #endif

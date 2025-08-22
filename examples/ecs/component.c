@@ -17,5 +17,6 @@ void initializeComponents(ECS * ecs)
         .scale        = ALLOC_POOL(Scale),
         .localToWorld = ALLOC_POOL(LocalToWorld),
         .velocity     = ALLOC_POOL(Velocity),
+        .rigidBody    = ALLOC_POOL(RigidBody)
     };
 }

@@ -27,6 +27,9 @@ void parentSystem(ECS * ecs)
     for (EntityId i = 0; i < ecs->entityData.nextEntityId; i++)
     {        
         Entity *entity = &ecs->entityData.entities[i];
+        if (entity->state & ENTITY_DELETED)
+            continue;
+            
         if (entity->components & COMPONENT_PARENT)
         {            
             // Get parent component

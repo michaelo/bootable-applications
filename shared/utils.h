@@ -2,9 +2,6 @@
 #define IMPL_UTILS
 
 #include "lil_uefi/lil_uefi.h"
-
-
-#include "shared/text.h"
 #include "shared/efi_status.h"
 
 typedef enum
